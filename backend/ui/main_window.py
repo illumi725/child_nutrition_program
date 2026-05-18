@@ -274,6 +274,29 @@ class MainWindow(QMainWindow):
 
         # Start auto-sync if Local mode is active
         self._start_auto_sync_timer()
+        
+        # Setup Auto-Update Checker
+        from core.updater import UpdateCheckThread
+        self.updater_thread = UpdateCheckThread(self)
+        self.updater_thread.update_available.connect(self.on_update_available)
+        self.updater_thread.start()
+
+    def on_update_available(self, latest_version, release_notes, html_url):
+        from PySide6.QtWidgets import QMessageBox
+        from PySide6.QtGui import QDesktopServices
+        from PySide6.QtCore import QUrl
+        
+        reply = QMessageBox.question(
+            self,
+            "Update Available",
+            f"A new version of the application ({latest_version}) is available!\n\n"
+            f"Would you like to download it now?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+        
+        if reply == QMessageBox.Yes:
+            QDesktopServices.openUrl(QUrl(html_url))
 
     def on_grid_action(self, action_name, record, action_widget):
         from core.database import sync_baseline
