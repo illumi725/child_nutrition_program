@@ -17,22 +17,19 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            artifact_name: hapag_comparator
             asset_name: hapag-comparator-linux
           - os: windows-latest
-            artifact_name: hapag_comparator.exe
             asset_name: hapag-comparator-windows
           - os: macos-latest
-            artifact_name: hapag_comparator
             asset_name: hapag-comparator-macos
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
         cache: 'pip'
 
     - name: Install dependencies
@@ -60,3 +57,4 @@ jobs:
       with:
         name: ${{ matrix.asset_name }}
         path: ${{ matrix.asset_name }}.zip
+
