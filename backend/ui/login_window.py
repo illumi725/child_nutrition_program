@@ -18,10 +18,12 @@ class GoogleLoginThread(QThread):
             self.finished_auth.emit("", "Missing required Google Auth libraries.")
             return
 
-        client_secrets_file = os.path.join(os.path.dirname(__file__), '..', 'client_secrets.json')
-        if not os.path.exists(client_secrets_file):
-            if hasattr(sys, '_MEIPASS'):
-                client_secrets_file = os.path.join(sys._MEIPASS, 'client_secrets.json')
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            
+        client_secrets_file = os.path.join(base_dir, 'client_secrets.json')
             
         if not os.path.exists(client_secrets_file):
             self.finished_auth.emit("", "Missing client_secrets.json file. Cannot authenticate with Google.")

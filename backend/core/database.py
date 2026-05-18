@@ -6,8 +6,16 @@ from typing import List, Dict, Any
 
 def get_db_creds():
     creds = {}
-    # Use the root of the project to find db.dat
-    db_dat_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "db.dat"))
+    import sys
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        # Running as normal Python script
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        
+    db_dat_path = os.path.join(base_dir, "db.dat")
+    
     if not os.path.exists(db_dat_path): return creds
     with open(db_dat_path, 'r') as f:
         for line in f:
