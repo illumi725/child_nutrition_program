@@ -6,6 +6,9 @@ import datetime
 from decimal import Decimal
 from typing import List, Dict, Any
 
+# Register adapter for decimal.Decimal to work seamlessly with SQLite
+sqlite3.register_adapter(Decimal, str)
+
 # ── Connection Routing ────────────────────────────────────────────────────────
 
 def get_db_connection():
