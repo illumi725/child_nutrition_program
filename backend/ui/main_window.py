@@ -89,6 +89,10 @@ class MainWindow(QMainWindow):
         self.btn_settings.setStyleSheet("background-color: #555; color: white; font-weight: bold; padding: 5px;")
         self.btn_settings.clicked.connect(self.open_settings)
         
+        self.btn_about = QPushButton("ℹ️ About")
+        self.btn_about.setStyleSheet("background-color: #34495e; color: white; font-weight: bold; padding: 5px;")
+        self.btn_about.clicked.connect(self.open_about)
+        
         self.btn_dashboard = QPushButton("📊 System Dashboard")
         self.btn_dashboard.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
         self.btn_dashboard.clicked.connect(self.open_dashboard)
@@ -101,6 +105,7 @@ class MainWindow(QMainWindow):
         right_header_layout.addWidget(self.btn_search_beneficiary)
         right_header_layout.addWidget(self.btn_dashboard)
         right_header_layout.addWidget(self.btn_settings)
+        right_header_layout.addWidget(self.btn_about)
         
         right_layout.addLayout(right_header_layout)
 
@@ -687,6 +692,28 @@ class MainWindow(QMainWindow):
                         f"({self.current_user['role']})") if self.current_user else "Unknown User"
         self._update_window_title(user_display)
         self._start_auto_sync_timer()
+
+    def open_about(self):
+        from PySide6.QtWidgets import QMessageBox
+        from core.version import APP_VERSION
+        import datetime
+        
+        current_year = datetime.date.today().year
+        
+        about_text = (
+            "HAPAG Form 5A Comparator\n\n"
+            f"Version: {APP_VERSION}\n\n"
+            "Developed By: Jhay [06194]\n"
+            "Agile Transformation Office\n\n"
+            "ASA Philippines Foundation, Inc. (A Microfinance NGO)\n\n"
+            f"All Rights Reserved. © {current_year}"
+        )
+        
+        QMessageBox.information(
+            self,
+            "About HAPAG Form 5A Comparator",
+            about_text
+        )
 
     def _update_window_title(self, user_display: str):
         from core.app_settings import get_mode
