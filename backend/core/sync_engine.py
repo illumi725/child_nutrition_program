@@ -68,6 +68,43 @@ def _set_last_synced(local: sqlite3.Connection, table: str, ts: str):
     """, (table, ts))
     local.commit()
 
+def _replicate_indexes(cloud, local: sqlite3.Connection, table: str):
+    """Fetch indexes from MySQL and create them in SQLite."""
+    try:
+        with cloud.cursor() as c:
+            c.execute(f"SHOW INDEX FROM `{table}`")
+            indexes = c.fetchall()
+    except Exception as e:
+        print(f"[REPLICATE-INDEX-ERROR] Could not fetch indexes for {table}: {e}")
+        return
+
+    index_defs = {}
+    for idx in indexes:
+        key_name = idx['Key_name']
+        if key_name == 'PRIMARY':
+            continue  # Primary Key is already handled in table creation DDL
+        
+        if key_name not in index_defs:
+            index_defs[key_name] = {
+                'unique': idx['Non_unique'] == 0,
+                'columns': []
+            }
+        index_defs[key_name]['columns'].append((idx['Seq_in_index'], idx['Column_name']))
+
+    for key_name, info in index_defs.items():
+        sorted_cols = sorted(info['columns'], key=lambda x: x[0])
+        cols_str = ', '.join([f'"{col}"' for _, col in sorted_cols])
+        
+        unique_clause = "UNIQUE" if info['unique'] else ""
+        idx_name = f"idx_{table}_{key_name}"
+        
+        ddl = f"CREATE {unique_clause} INDEX IF NOT EXISTS \"{idx_name}\" ON \"{table}\" ({cols_str})"
+        try:
+            local.execute(ddl)
+        except Exception as e:
+            print(f"[REPLICATE-INDEX-ERROR] Failed to execute: {ddl}. Error: {e}")
+    local.commit()
+
 def _create_sqlite_table_from_mysql(cloud, local: sqlite3.Connection, table: str):
     """Recreate the SQLite table schema based on live MySQL DESCRIBE."""
     with cloud.cursor() as c:
@@ -90,6 +127,9 @@ def _create_sqlite_table_from_mysql(cloud, local: sqlite3.Connection, table: str
     local.execute(f'DROP TABLE IF EXISTS "{table}"')
     local.execute(ddl)
     local.commit()
+    
+    # Auto-replicate all indexes and unique constraints from the live database table
+    _replicate_indexes(cloud, local, table)
 
 def _serialize_value(val):
     """Convert MySQL types to SQLite-compatible values."""
