@@ -3,6 +3,8 @@ name: Build Executables
 on:
   push:
     branches: [ "main", "master" ]
+    tags:
+      - 'v*.*.*'        # triggers on version tags like v1.0.0
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
@@ -69,9 +71,16 @@ jobs:
         cd backend/dist/hapag_comparator
         zip -r ../../../${{ matrix.asset_name }}.zip ./*
 
-    - name: Upload Build Artifact
+    - name: Upload Build Artifact (dev preview)
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.asset_name }}
         path: ${{ matrix.asset_name }}.zip
 
+    - name: Upload to GitHub Release (on version tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ${{ matrix.asset_name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
