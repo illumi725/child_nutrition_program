@@ -1,0 +1,21 @@
+# Secrets
+db.dat
+client_secrets.json
+
+# Python and environments
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# PyInstaller build files
+backend/build/
+backend/dist/
+backend/*.spec
+interfile_index_cache.json
+global_stats_cache.json
+
+# HAPAG BASELINE FOLDER (DO NOT ADD TO GITHUB)
+HAPAG APPROVED BASELINE/
+
+*.code-workspace

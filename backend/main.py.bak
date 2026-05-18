@@ -1,0 +1,1022 @@
+import os
+import io
+import datetime
+import pymysql
+import openpyxl
+import pandas as pd
+import re
+import json
+import asyncio
+from fuzzywuzzy import fuzz
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import List, Dict, Any, Optional
+from decimal import Decimal
+import random
+import string
+try:
+    from .anthro_utils import calculate_anthro_stats
+except ImportError:
+    from anthro_utils import calculate_anthro_stats
+
+app = FastAPI(title="HAPAG Form 5A Comparator API")
+
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "HAPAG APPROVED BASELINE"))
+
+def get_db_creds():
+    creds = {}
+    db_dat_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "db.dat"))
+    if not os.path.exists(db_dat_path): return creds
+    with open(db_dat_path, 'r') as f:
+        for line in f:
+            if '=' in line:
+                key, val = line.strip().split('=', 1)
+                creds[key] = val.strip('"')
+    return creds
+
+def get_db_connection():
+    creds = get_db_creds()
+    host = creds.get('DB_HOST')
+    db = creds.get('DB_DATABASE')
+    # print(f"[DEBUG] Connecting to {host}/{db} as {creds.get('DB_USERNAME')}")
+    return pymysql.connect(
+        host=host, user=creds.get('DB_USERNAME'), password=creds.get('DB_PASSWORD'),
+        database=db, port=int(creds.get('DB_PORT', 3306)),
+        cursorclass=pymysql.cursors.DictCursor
+    )
+
+def fetch_beneficiaries() -> List[Dict[str, Any]]:
+    connection = get_db_connection()
+    try:
+        # Real-time DB Probe for data persistence verification
+        # with connection.cursor() as cursor:
+        #     cursor.execute("SELECT beneficiary_id, lastname, firstname, birthday FROM beneficiaries WHERE beneficiary_id IN ('79qxtcle', 'erzoqyhz')")
+        #     probes = cursor.fetchall()
+        #     for p in probes:
+        #         print(f"[DB-PROBE] ID: {p['beneficiary_id']} | NAME: {p['firstname']} {p['lastname']} | BDAY: {p['birthday']}")
+
+        with connection.cursor() as cursor:
+            sql = """
+            SELECT 
+                b.beneficiary_id, b.lastname, b.firstname, b.middlename, b.birthday, b.gender, b.site_id,
+                s.site_name, s.batch, br.barangay_name, cm.citymun_name, p.province_name,
+                (SELECT weight FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as weight,
+                (SELECT height FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as height,
+                (SELECT age FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as age,
+                (SELECT date_collected FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as date_collected,
+                (SELECT bmifa_status FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as bmifa_status,
+                (SELECT bmifa_figure FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as bmifa_figure,
+                (SELECT wfa_status FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as wfa_status,
+                (SELECT wfa_figure FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as wfa_figure,
+                (SELECT hfa_status FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as hfa_status,
+                (SELECT hfa_figure FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as hfa_figure,
+                (SELECT wfh_status FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as wfh_status,
+                (SELECT wfh_figure FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as wfh_figure
+            FROM beneficiaries b
+            LEFT JOIN sites s ON b.site_id = s.site_id
+            LEFT JOIN barangays br ON s.barangay_code = br.barangay_code
+            LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code
+            LEFT JOIN provinces p ON s.province_code = p.province_code
+            """
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for r in rows:
+                if isinstance(r.get('weight'), Decimal): r['weight'] = float(r['weight'])
+                if isinstance(r.get('height'), Decimal): r['height'] = float(r['height'])
+                if isinstance(r.get('birthday'), (datetime.date, datetime.datetime)):
+                    r['birthday'] = r['birthday'].strftime('%Y-%m-%d')
+                if isinstance(r.get('date_collected'), (datetime.date, datetime.datetime)):
+                    r['date_collected'] = r['date_collected'].strftime('%Y-%m-%d')
+            return rows
+    finally: connection.close()
+
+def clean_name(name_str):
+    if not name_str: return ""
+    # Standardize whitespace and remove symbols for cleaning
+    s = re.sub(r'[^\w\s\.]', ' ', str(name_str).upper())
+    return ' '.join(s.split())
+
+def split_beneficiary_name(raw_name):
+    """
+    Splits a full name string into (lastname, firstname, middlename).
+    Supports:
+    - 'AQUINO, ALTHEA Y.'
+    - 'ALTHEA Y AQUINO'
+    """
+    raw_name = str(raw_name).strip()
+    if not raw_name: return "", "", ""
+    
+    if ',' in raw_name:
+        # Format: Lastname, Firstname [Middlename]
+        parts = raw_name.split(',', 1)
+        lastname = parts[0].strip().upper()
+        first_and_middle = parts[1].strip() if len(parts) > 1 else ""
+        fn_parts = first_and_middle.split()
+        if len(fn_parts) > 1:
+            middlename = fn_parts[-1].upper()
+            firstname = ' '.join(fn_parts[:-1]).upper()
+        else:
+            firstname = first_and_middle.upper()
+            middlename = ""
+        return lastname, firstname, middlename
+    else:
+        # Format: [First] [Middle] [Last] (No comma)
+        parts = raw_name.split()
+        if len(parts) >= 3:
+            lastname = parts[-1].upper()
+            middlename = parts[-2].upper()
+            firstname = ' '.join(parts[:-2]).upper()
+            return lastname, firstname, middlename
+        elif len(parts) == 2:
+            return parts[1].upper(), parts[0].upper(), ""
+        else:
+            return parts[0].upper(), "", ""
+
+def calculate_match_score(excel_rec, db_rec):
+    ex_ln, ex_fn = clean_name(excel_rec['lastname']), clean_name(excel_rec['firstname'])
+    db_ln, db_fn, db_mn = clean_name(db_rec.get('lastname')), clean_name(db_rec.get('firstname')), clean_name(db_rec.get('middlename'))
+    ex_bd = str(excel_rec['birthday'])
+    db_bd = str(db_rec['birthday'])
+
+    # Diagnostic logging for specific records
+    target_ids = ['79qxtcle', 'erzoqyhz'] # Sapulpaya and Canduli
+    is_target = str(db_rec.get('beneficiary_id')) in target_ids
+    
+    # if is_target:
+    #     print(f"[SCAN-LOG] Comparing ID {db_rec['beneficiary_id']}")
+    #     print(f"           DB Name: {db_ln}, {db_fn} | Excel: {ex_ln}, {ex_fn}")
+    #     print(f"           DB Bday: {db_bd} | Excel: {ex_bd}")
+
+    # Define combinations for exact matching
+    db_full_fn = clean_name(f"{db_fn} {db_mn}")
+    ex_full_fn = ex_fn # clean_name already called above
+    
+    # Exact match means Lastname matches AND (Firstname matches OR First + Middle matches)
+    names_match = (ex_ln == db_ln) and (
+        (ex_fn == db_fn) or 
+        (ex_full_fn == db_full_fn) or
+        (ex_full_fn.replace(" ","") == db_full_fn.replace(" ",""))
+    )
+
+    if names_match and ex_bd == db_bd:
+        # if is_target: print(f"           => SUCCESS: EXACT MATCH")
+        return 100, "exact"
+        
+    ex_full = f"{ex_ln} {ex_fn}"
+    db_full = f"{db_ln} {db_fn} {db_mn}"
+    score = fuzz.token_set_ratio(ex_full, db_full)
+    
+    has_db_mn = len(db_mn) > 0
+    has_ex_mn = len(ex_fn.split()) > 1 or (len(ex_fn.split()) == 1 and len(ex_fn) == 1)
+    if has_db_mn and not has_ex_mn: score -= 15
+    
+    match_type = "fuzzy"
+    if ex_bd != db_bd:
+        # Check if it is a common day/month swap
+        is_swap = False
+        if ex_bd and db_bd and len(ex_bd) == 10 and len(db_bd) == 10:
+            try:
+                y1, m1, d1 = ex_bd.split('-')
+                y2, m2, d2 = db_bd.split('-')
+                if y1 == y2 and m1 == d2 and d1 == m2:
+                    is_swap = True
+            except: pass
+            
+        if is_swap:
+            score -= 5 # Minor penalty for swapped month/day
+            match_type = "fuzzy_dob_swapped"
+        else:
+            score -= 20 # Major penalty for complete mismatch
+            match_type = "fuzzy_dob_mismatch"
+            
+    if is_target: print(f"           => RESULT: {match_type} (Score {score})")
+    return max(0, score), match_type
+
+def get_best_site_suggestion(excel_rec, sites_cache):
+    # Try fuzzy matching the excel_site from header against sites_cache
+    if not excel_rec.get('excel_site'): return None
+    ex_site_clean = clean_name(excel_rec['excel_site'])
+    
+    best_score, best_id = 0, None
+    for s in sites_cache:
+        score = fuzz.token_sort_ratio(ex_site_clean, clean_name(s['site_name']))
+        if score > 80 and score > best_score:
+            best_score, best_id = score, s['site_id']
+    return best_id
+
+def safe_float(val):
+    try:
+        if pd.isna(val): return None
+        return round(float(val), 2)
+    except: return None
+
+def parse_date_collected(df_header):
+    if len(df_header) > 9:
+        row10 = df_header.iloc[9]
+        for col_idx in [4, 5, 6]:
+            if col_idx < len(row10):
+                val_str = str(row10.iloc[col_idx]).upper()
+                if 'DATE OF WEIGHING' in val_str:
+                    parts = val_str.split('DATE OF WEIGHING:')
+                    if len(parts) > 1:
+                        raw = parts[1].split('MIDLINE')[0].split('ENDLINE')[0].strip()
+                        clean = raw.replace('_', '').replace('\n', ' ').strip()
+                        if clean:
+                            try: return pd.to_datetime(clean).strftime('%Y-%m-%d')
+                            except:
+                                try:
+                                    import dateparser
+                                    dt = dateparser.parse(clean)
+                                    if dt: return dt.strftime('%Y-%m-%d')
+                                except: pass
+    return None
+
+def parse_form_5a(file_path: str) -> List[Dict[str, Any]]:
+    records = []
+    try:
+        xl = pd.ExcelFile(file_path)
+        form_5a_sheet = next((s for s in xl.sheet_names if '5A' in s.upper()), None)
+        if not form_5a_sheet: return records
+        df_temp = pd.read_excel(file_path, sheet_name=form_5a_sheet, nrows=30, header=None)
+        
+        # Site Data Extraction from Header
+        excel_city, excel_brgy, excel_prov, excel_site = "", "", "", ""
+        for _, row in df_temp.iterrows():
+            row_str = ' '.join(str(v).upper() for v in row.values if pd.notna(v))
+            if 'CITY/ MUNICIPALITY:' in row_str: excel_city = str(row.tolist()[9]).strip() if len(row) > 9 else ""
+            if 'BARANGAY:' in row_str: excel_brgy = str(row.tolist()[9]).strip() if len(row) > 9 else ""
+            if 'PROVINCE' in row_str and 'BULACAN' in row_str: excel_prov = 'BULACAN' # Example heuristic
+            elif 'PROVINCE' in row_str: excel_prov = str(row.tolist()[2]).strip() if len(row) > 2 else ""
+            if 'FEEDING SITE' in row_str: excel_site = str(row.tolist()[2]).strip() if len(row) > 2 else ""
+
+        # Batch Extraction Logic
+        excel_batch = None
+        # Priority 1: Filename
+        batch_match = re.search(r'Batch\s*(\d+)', os.path.basename(file_path), re.IGNORECASE)
+        if batch_match: 
+            excel_batch = int(batch_match.group(1))
+        
+        # Priority 2: Header (if not in filename)
+        if excel_batch is None:
+            for _, row in df_temp.iterrows():
+                row_list = [str(x).upper() for x in row.tolist()]
+                if any('BATCH' in val for val in row_list):
+                    idx = next((i for i, val in enumerate(row_list) if 'BATCH' in val), -1)
+                    if idx != -1 and idx + 1 < len(row):
+                        try:
+                            val = str(row.tolist()[idx+1]).strip()
+                            excel_batch = int(re.search(r'(\d+)', val).group(1))
+                            break
+                        except: pass
+
+        date_collected = parse_date_collected(df_temp)
+        header_row_index = -1
+        for idx, row in df_temp.iterrows():
+            row_str = ' '.join(str(val).upper() for val in row.values if pd.notna(val))
+            if 'LAST NAME' in row_str or 'FIRST NAME' in row_str:
+                header_row_index = idx
+                break
+        if header_row_index == -1: return records
+        df = pd.read_excel(file_path, sheet_name=form_5a_sheet, skiprows=header_row_index)
+        # Identify Data Columns
+        name_col = next((col for col in df.columns if 'name' in str(col).lower()), None)
+        birthday_col = next((col for col in df.columns if 'birthday' in str(col).lower() or 'birth' in str(col).lower()), None)
+        gender_col = next((col for col in df.columns if any(k in str(col).lower() for k in ['sex', 'gender'])), None)
+        
+        weight_col, height_col = None, None
+        for col in df.columns:
+            for r_idx in range(min(3, len(df))):
+                val_str = str(df.iloc[r_idx][col]).lower()
+                col_str = str(col).lower()
+                if not weight_col and ('weight' in val_str or ('weight' in col_str and 'baseline' in col_str)): weight_col = col
+                if not height_col and ('height' in val_str or ('height' in col_str and 'baseline' in col_str)): height_col = col
+
+        # Load sites for mapping
+        sites_cache = []
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT site_id, site_name FROM sites")
+                sites_cache = cursor.fetchall()
+            conn.close()
+        except: pass
+
+        start_idx = 2 if weight_col or height_col else 0
+        for act_idx in range(start_idx, len(df)):
+            row = df.iloc[act_idx]
+            raw_name = str(row[name_col]) if pd.notna(row.get(name_col)) else ""
+            if not raw_name or raw_name.lower() in ['nan', 'none', '']: continue
+            
+            lastname, firstname, middlename = split_beneficiary_name(raw_name)
+
+            # Gender Detection
+            gender = "Boy"
+            if gender_col:
+                raw_g = str(row.get(gender_col)).upper()
+                if 'G' in raw_g or 'F' in raw_g or 'GIRL' in raw_g: gender = "Girl"
+            
+            raw_bday = row.get(birthday_col)
+            bday_str = None
+            if pd.notna(raw_bday):
+                try: bday_str = pd.to_datetime(raw_bday).strftime('%Y-%m-%d')
+                except: bday_str = str(raw_bday)
+
+            ex_rec = {
+                "stable_id": f"{os.path.basename(file_path)}_{header_row_index + act_idx + 2}",
+                "row_number": header_row_index + act_idx + 2,
+                "file_path": file_path,
+                "source_file": os.path.basename(file_path),
+                "raw_name": raw_name,
+                "lastname": lastname, "firstname": firstname, "middlename": middlename,
+                "gender": gender,
+                "birthday": bday_str,
+                "excel_city": excel_city, "excel_brgy": excel_brgy, "excel_prov": excel_prov, "excel_site": excel_site,
+                "excel_batch": excel_batch,
+                "weight": safe_float(row.get(weight_col)) if weight_col else None,
+                "height": safe_float(row.get(height_col)) if height_col else None,
+                "date_collected": date_collected
+            }
+            # Calculate Anthro Preview
+            anthro_preview = None
+            if bday_str and ex_rec['weight'] and ex_rec['height']:
+                try:
+                    b_dt = datetime.datetime.strptime(bday_str, '%Y-%m-%d').date()
+                    c_dt = datetime.datetime.strptime(date_collected, '%Y-%m-%d').date() if date_collected else datetime.date.today()
+                    months = (c_dt.year - b_dt.year) * 12 + c_dt.month - b_dt.month
+                    anthro_preview = calculate_anthro_stats(months, gender, ex_rec['weight'], ex_rec['height'])
+                except: pass
+            ex_rec['anthro_preview'] = anthro_preview
+
+            # Add Suggested Site
+            ex_rec['suggested_site_id'] = get_best_site_suggestion(ex_rec, sites_cache)
+            records.append(ex_rec)
+    except Exception as e:
+        print(f"[RE-ERROR] Parser: {str(e)}")
+    return records
+    return records
+
+def evaluate_match(ex, db_r, sites_cache=None):
+    score, m_type = calculate_match_score(ex, db_r)
+    
+    db_w, db_h = safe_float(db_r.get('weight')), safe_float(db_r.get('height'))
+    db_date = db_r.get('date_collected')
+    ex_date = ex.get('date_collected')
+    
+    db_bday_str = str(db_r.get('birthday', ''))
+    ex_bday_str = str(ex.get('birthday', ''))
+    
+    weight_mismatch = (ex['weight'] is not None and (db_w is None or abs(ex['weight'] - db_w) > 0.1))
+    height_mismatch = (ex['height'] is not None and (db_h is None or abs(ex['height'] - db_h) > 0.1))
+    date_mismatch = (ex_date is not None and (ex_date != db_date))
+    birthday_mismatch = (ex_bday_str and db_bday_str and ex_bday_str != db_bday_str)
+    
+    # Improved site mismatch logic
+    ex_site = ex.get('excel_site', '').strip().upper()
+    db_site = db_r.get('site_name', '').strip().upper()
+    site_mismatch = (ex_site != "" and db_site != "" and ex_site != db_site)
+    
+    baseline_mismatch = weight_mismatch or height_mismatch or date_mismatch or birthday_mismatch
+    
+    return {
+        "score": score,
+        "type": "exact" if score == 100 else m_type,
+        "baseline_mismatch": baseline_mismatch,
+        "weight_mismatch": weight_mismatch,
+        "height_mismatch": height_mismatch,
+        "date_mismatch": date_mismatch,
+        "birthday_mismatch": birthday_mismatch,
+        "site_mismatch": site_mismatch
+    }
+
+def get_best_site_suggestion(ex, sites_cache):
+    if not sites_cache: return None
+    ex_full = f"{ex.get('excel_site','') or ''} {ex.get('excel_brgy','') or ''} {ex.get('excel_city','') or ''} {ex.get('excel_prov','') or ''}".upper()
+    best_sid, best_s_score = None, 0
+    for s in sites_cache:
+        db_full = f"{s.get('site_name','') or ''} {s.get('barangay_name','') or ''} {s.get('citymun_name','') or ''} {s.get('province_name','') or ''}".upper()
+        s_score = fuzz.token_set_ratio(ex_full, db_full)
+        if ex.get('excel_batch') is not None and s.get('batch') == ex['excel_batch']:
+            s_score += 10
+        if s_score > best_s_score:
+            best_s_score, best_sid = s_score, s
+    return best_sid if best_s_score > 70 else None
+
+@app.get("/api/directory")
+def get_directory_tree():
+    def path_to_dict(path):
+        d = {'name': os.path.basename(path), 'path': path}
+        if os.path.isdir(path):
+            d['type'] = "directory"
+            d['children'] = [path_to_dict(os.path.join(path, x)) for x in sorted(os.listdir(path)) if not x.startswith('.~lock')]
+        else:
+            d['type'] = "file"
+        return d
+    if not os.path.exists(BASE_DIR): raise HTTPException(status_code=404, detail="Base directory not found.")
+    return path_to_dict(BASE_DIR)
+
+
+
+@app.get("/api/sites")
+def get_sites():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT s.site_id, s.site_name, s.batch, br.barangay_name, cm.citymun_name, p.province_name 
+                FROM sites s
+                LEFT JOIN barangays br ON s.barangay_code = br.barangay_code
+                LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code
+                LEFT JOIN provinces p ON s.province_code = p.province_code
+                ORDER BY s.site_name
+            """)
+            return cursor.fetchall()
+    finally: conn.close()
+
+class ScanRequest(BaseModel):
+    files: List[str]
+
+@app.post("/api/admin/recalculate-all-anthro")
+def recalculate_all_anthro():
+    """
+    Utility endpoint to sweep the entire DB and fix/update all nutritional stats
+    using the new comprehensive WHO logic.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # Get latest baseline for each beneficiary
+            cursor.execute("""
+                SELECT bl.info_id, bl.beneficiary_id, bl.weight, bl.height, bl.date_collected, b.birthday, b.gender 
+                FROM baseline_info bl
+                JOIN beneficiaries b ON bl.beneficiary_id = b.beneficiary_id
+                WHERE bl.info_id IN (
+                    SELECT SUBSTRING_INDEX(GROUP_CONCAT(info_id ORDER BY created_at DESC), ',', 1)
+                    FROM baseline_info
+                    GROUP BY beneficiary_id
+                )
+            """)
+            items = cursor.fetchall()
+            fixed_count = 0
+            for item in items:
+                bday = item['birthday']
+                ref_date = item['date_collected'] or datetime.date.today()
+                age_in_months = (ref_date.year - bday.year) * 12 + ref_date.month - bday.month
+                
+                stats = calculate_anthro_stats(age_in_months, item['gender'], item['weight'], item['height'])
+                
+                cursor.execute("""
+                    UPDATE baseline_info SET
+                        age = %s,
+                        wfa_figure = %s, wfa_status = %s,
+                        hfa_figure = %s, hfa_status = %s,
+                        wfh_figure = %s, wfh_status = %s,
+                        bmifa_figure = %s, bmifa_status = %s,
+                        updated_at = NOW()
+                    WHERE info_id = %s
+                """, (
+                    age_in_months,
+                    stats.get('wfa_figure'), stats.get('wfa_status'),
+                    stats.get('hfa_figure'), stats.get('hfa_status'),
+                    stats.get('wfh_figure'), stats.get('wfh_status'),
+                    stats.get('bmifa_figure'), stats.get('bmifa_status'),
+                    item['info_id']
+                ))
+                fixed_count += 1
+            conn.commit()
+            return {"status": "ok", "fixed_count": fixed_count}
+    except Exception as e:
+        print(f"[RECALC-ERROR] {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally: conn.close()
+
+class SyncSingleAnthroRequest(BaseModel):
+    beneficiary_id: str
+
+@app.post("/api/sync-single-anthro")
+def sync_single_anthro(req: SyncSingleAnthroRequest):
+    """
+    Recalculates and updates the nutritional status for a single beneficiary
+    based on their existing DB measurements.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # Get latest measurement
+            cursor.execute("""
+                SELECT bl.info_id, bl.weight, bl.height, bl.date_collected, b.birthday, b.gender 
+                FROM baseline_info bl
+                JOIN beneficiaries b ON bl.beneficiary_id = b.beneficiary_id
+                WHERE bl.beneficiary_id = %s
+                ORDER BY bl.created_at DESC LIMIT 1
+            """, (req.beneficiary_id,))
+            item = cursor.fetchone()
+            if not item:
+                raise HTTPException(status_code=404, detail="No measurements found for this beneficiary.")
+            
+            bday = item['birthday']
+            ref_date = item['date_collected'] or datetime.date.today()
+            age_in_months = (ref_date.year - bday.year) * 12 + ref_date.month - bday.month
+            
+            stats = calculate_anthro_stats(age_in_months, item['gender'], item['weight'], item['height'])
+            
+            cursor.execute("""
+                UPDATE baseline_info SET
+                    age = %s,
+                    wfa_figure = %s, wfa_status = %s,
+                    hfa_figure = %s, hfa_status = %s,
+                    wfh_figure = %s, wfh_status = %s,
+                    bmifa_figure = %s, bmifa_status = %s,
+                    updated_at = NOW()
+                WHERE info_id = %s
+            """, (
+                age_in_months,
+                stats.get('wfa_figure'), stats.get('wfa_status'),
+                stats.get('hfa_figure'), stats.get('hfa_status'),
+                stats.get('wfh_figure'), stats.get('wfh_status'),
+                stats.get('bmifa_figure'), stats.get('bmifa_status'),
+                item['info_id']
+            ))
+            conn.commit()
+            return {"status": "ok", "new_stats": stats}
+    except Exception as e:
+        print(f"[SINGLE-SYNC-ERROR] {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally: conn.close()
+
+@app.post("/api/scan")
+def scan_files(req: ScanRequest):
+    db_records = fetch_beneficiaries()
+    excel_records = []
+    for fp in req.files:
+        if os.path.exists(fp) and fp.endswith('.xlsx'):
+            excel_records.extend(parse_form_5a(fp))
+            
+    # Load Site Cache for suggestions
+    sites_cache = []
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT s.site_id, s.site_name, s.batch, br.barangay_name, cm.citymun_name, p.province_name 
+                FROM sites s
+                LEFT JOIN barangays br ON s.barangay_code = br.barangay_code
+                LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code
+                LEFT JOIN provinces p ON s.province_code = p.province_code
+            """)
+            sites_cache = cursor.fetchall()
+    finally: conn.close()
+
+    db_by_bday = {}
+    db_by_lname = {}
+    for r in db_records:
+        bd = str(r['birthday'])
+        if bd not in db_by_bday: db_by_bday[bd] = []
+        db_by_bday[bd].append(r)
+        
+        ln = clean_name(r.get('lastname')).split(' ')[0] if clean_name(r.get('lastname')) else ''
+        if ln and ln not in db_by_lname: db_by_lname[ln] = []
+        if ln: db_by_lname[ln].append(r)
+
+    # --- Aggressive Excel Internal Duplicate Detection ---
+    excel_groups = {}
+    for ex in excel_records:
+        key = (clean_name(ex['lastname']), clean_name(ex['firstname']))
+        if key not in excel_groups: excel_groups[key] = []
+        excel_groups[key].append(ex)
+    
+    excel_conflicts = []
+    conflict_stable_ids = set()
+    for key, group in excel_groups.items():
+        if len(group) > 1:
+            excel_conflicts.append({
+                "name": f"{key[0]}, {key[1]}",
+                "birthday": "Multiple/Conflicting" if len(set(r['birthday'] for r in group)) > 1 else group[0]['birthday'],
+                "rows": group
+            })
+            for r in group:
+                conflict_stable_ids.add(r['stable_id'])
+    
+    # Only process non-conflicting rows for database matching
+    processable_records = [ex for ex in excel_records if ex['stable_id'] not in conflict_stable_ids]
+    # -----------------------------------------------------
+
+    matches, fuzzy_matches, potential_dupes, missing_in_db = [], [], [], []
+    for ex in processable_records:
+        best_score, best_db_match = 0, None
+        
+        ex_bd = str(ex['birthday'])
+        ex_ln = clean_name(ex['lastname']).split(' ')[0] if clean_name(ex['lastname']) else ''
+        
+        ex_bd_swapped = ""
+        if len(ex_bd) == 10:
+            try:
+                y, m, d = ex_bd.split('-')
+                ex_bd_swapped = f"{y}-{d}-{m}"
+            except: pass
+            
+        candidates_list = db_by_bday.get(ex_bd, []) + db_by_lname.get(ex_ln, [])
+        if ex_bd_swapped:
+            candidates_list += db_by_bday.get(ex_bd_swapped, [])
+            
+        candidates = {c['beneficiary_id']: c for c in candidates_list}.values()
+        
+        for db_r in candidates:
+            # Skip if this database record has already been claimed by a previous Excel row in this scan
+            if db_r.get('_matched'): 
+                continue
+
+            score, _ = calculate_match_score(ex, db_r)
+            if score > best_score:
+                best_score, best_db_match = score, db_r
+                
+        if best_db_match:
+            best_db_match['suggested_site'] = get_best_site_suggestion(ex, sites_cache)
+            match_info = evaluate_match(ex, best_db_match)
+            res_obj = { "excel": ex, "db": best_db_match, **match_info }
+            
+            if match_info['score'] == 100:
+                matches.append(res_obj)
+                best_db_match['_matched'] = True
+            elif match_info['score'] >= 85:
+                fuzzy_matches.append(res_obj)
+                best_db_match['_matched'] = True
+            elif match_info['score'] >= 70:
+                potential_dupes.append(res_obj)
+                # CRITICAL: Even potential matches claim the database record 
+                # to prevent other Excel rows from matching the same person wrongly.
+                best_db_match['_matched'] = True
+            else:
+                missing_in_db.append(ex)
+        else:
+            missing_in_db.append(ex)
+
+    return {
+        "status": "ok",
+        "results": {
+            "exact_matches": matches, 
+            "fuzzy_matches": fuzzy_matches, 
+            "potential_matches": potential_dupes,
+            "excel_conflicts": excel_conflicts,
+            "missing_in_db": missing_in_db, 
+            "missing_in_excel": [r for r in db_records if not r.get('_matched')][:100]
+        }
+    }
+
+class DeleteExcelRowRequest(BaseModel):
+    file_path: str
+    row_index: int
+
+@app.post("/api/excel/delete-row")
+def delete_excel_row(req: DeleteExcelRowRequest):
+    print(f"[DEBUG] Attempting to delete row {req.row_index} from {req.file_path}")
+    if not os.path.exists(req.file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    try:
+        wb = openpyxl.load_workbook(req.file_path)
+        # We assume the first sheet or find the one that matches our standard
+        sheet_names = wb.sheetnames
+        target_sheet = None
+        for s in sheet_names:
+            if 'form 5a' in s.lower() or '5a' in s.lower():
+                target_sheet = wb[s]
+                break
+        
+        if not target_sheet:
+            target_sheet = wb.active # Fallback to active sheet
+            
+        # Physical row deletion
+        target_sheet.delete_rows(req.row_index)
+        wb.save(req.file_path)
+        print(f"[DEBUG] Successfully deleted row {req.row_index}")
+        return {"status": "ok", "message": f"Deleted row {req.row_index}"}
+    except Exception as e:
+        print(f"[ERROR] Deletion failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ReverifyRequest(BaseModel):
+    excel_record: Dict[str, Any]
+    beneficiary_id: str
+
+@app.post("/api/reverify-match")
+def reverify_match(req: ReverifyRequest):
+    beneficiaries = fetch_beneficiaries()
+    db_r = next((r for r in beneficiaries if r['beneficiary_id'] == req.beneficiary_id), None)
+    if not db_r:
+        raise HTTPException(status_code=404, detail="Beneficiary not found")
+    
+    # We might need sites cache for evaluate_match if we ever add site suggestion there, 
+    # but for now evaluate_match only checks site equality.
+    match_info = evaluate_match(req.excel_record, db_r)
+    return {
+        "status": "ok",
+        "match_info": match_info,
+        "updated_db": db_r
+    }
+
+async def duplicate_scan_generator():
+    try:
+        db_records = fetch_beneficiaries()
+        yield f"data: {json.dumps({'type': 'init', 'total': len(db_records)})}\n\n"
+        
+        # Group by birthday
+        by_birthday = {}
+        for r in db_records:
+            bday = str(r.get('birthday'))
+            if bday not in by_birthday: by_birthday[bday] = []
+            by_birthday[bday].append(r)
+            
+        duplicates_found = 0
+        processed_count = 0
+        
+        for bday, group in by_birthday.items():
+            group_processed_ids = set()
+            for i in range(len(group)):
+                r1 = group[i]
+                processed_count += 1
+                
+                # Send progress for EVERY record to keep UI active and accurate
+                if processed_count % 5 == 0: # Throttle slightly to avoid flooding
+                    yield f"data: {json.dumps({'type': 'progress', 'name': f'{r1['lastname']}, {r1['firstname']}', 'count': processed_count})}\n\n"
+                    await asyncio.sleep(0.0001)
+                
+                if len(group) < 2 or r1['beneficiary_id'] in group_processed_ids: 
+                    continue
+                
+                current_group = []
+                for j in range(i + 1, len(group)):
+                    r2 = group[j]
+                    n1 = clean_name(f"{r1['lastname']} {r1['firstname']} {r1['middlename']}")
+                    n2 = clean_name(f"{r2['lastname']} {r2['firstname']} {r2['middlename']}")
+                    if fuzz.token_set_ratio(n1, n2) >= 85:
+                        if not current_group: current_group.append(r1)
+                        current_group.append(r2)
+                        group_processed_ids.add(r2['beneficiary_id'])
+                
+                if current_group:
+                    duplicates_found += 1
+                    yield f"data: {json.dumps({'type': 'match', 'group': current_group})}\n\n"
+                
+                group_processed_ids.add(r1['beneficiary_id'])
+
+        yield f"data: {json.dumps({'type': 'complete', 'total_groups': duplicates_found})}\n\n"
+    except Exception as e:
+        yield f"data: {json.dumps({'type': 'error', 'msg': str(e)})}\n\n"
+
+@app.get("/api/db-duplicates/stream")
+async def get_db_duplicates_stream():
+    return StreamingResponse(
+        duplicate_scan_generator(), 
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+class SyncItem(BaseModel):
+    beneficiary_id: str
+    weight: float
+    height: float
+    date_collected: Optional[str] = None
+    birthday: str
+
+def _execute_baseline_sync(cursor, item: SyncItem):
+    # 1. Update the birthday in beneficiaries
+    cursor.execute("UPDATE beneficiaries SET birthday = %s WHERE beneficiary_id = %s", (item.birthday, item.beneficiary_id))
+    
+    # 2. Get gender to calculate anthro stats
+    cursor.execute("SELECT gender, birthday FROM beneficiaries WHERE beneficiary_id = %s", (item.beneficiary_id,))
+    ben = cursor.fetchone()
+    if not ben: return {}
+    
+    bday = ben['birthday']
+    ref_date = datetime.date.today()
+    if item.date_collected:
+        try: ref_date = datetime.datetime.strptime(item.date_collected, '%Y-%m-%d').date()
+        except: pass
+    
+    age_in_months = (ref_date.year - bday.year) * 12 + ref_date.month - bday.month
+    stats = calculate_anthro_stats(age_in_months, ben['gender'], item.weight, item.height)
+    
+    # 3. Update baseline_info
+    sql = """
+    UPDATE baseline_info SET 
+        weight = %s, height = %s, age = %s, date_collected = %s,
+        wfa_figure = %s, wfa_status = %s, 
+        hfa_figure = %s, hfa_status = %s, 
+        wfh_figure = %s, wfh_status = %s, 
+        bmifa_figure = %s, bmifa_status = %s, 
+        updated_at = NOW()
+    WHERE beneficiary_id = %s ORDER BY created_at DESC LIMIT 1
+    """
+    cursor.execute(sql, (
+        item.weight, item.height, age_in_months, item.date_collected, 
+        stats.get('wfa_figure'), stats.get('wfa_status'),
+        stats.get('hfa_figure'), stats.get('hfa_status'),
+        stats.get('wfh_figure'), stats.get('wfh_status'),
+        stats.get('bmifa_figure'), stats.get('bmifa_status'),
+        item.beneficiary_id
+    ))
+    return stats
+
+@app.post("/api/sync-baseline")
+def sync_baseline(item: SyncItem):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            stats = _execute_baseline_sync(cursor, item)
+            conn.commit()
+            return {"status": "ok", "new_stats": stats}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally: conn.close()
+
+class BulkSyncRequest(BaseModel):
+    items: List[SyncItem]
+
+@app.get("/api/sites")
+def get_sites():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT site_id, site_name, batch FROM sites ORDER BY site_name ASC")
+            return cursor.fetchall()
+    finally: conn.close()
+
+def generate_beneficiary_id():
+    # Generate 8-char random alphanumeric string
+    chars = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(chars) for _ in range(8))
+
+class RegisterItem(BaseModel):
+    lastname: str
+    firstname: str
+    middlename: str = ""
+    birthday: str
+    gender: str
+    weight: float
+    height: float
+    date_collected: str
+    site_id: str
+
+class RegisterBulkRequest(BaseModel):
+    items: List[RegisterItem]
+
+@app.post("/api/register-bulk")
+def register_bulk(req: RegisterBulkRequest):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            today_dt = datetime.date.today()
+            today_str = today_dt.strftime('%Y-%m-%d')
+            for item in req.items:
+                bid = generate_beneficiary_id()
+                
+                # 1. Name De-concatenation (Robust)
+                ln, fn, mn = split_beneficiary_name(item.lastname)
+                # If firstname was also provided in item, merge or prioritize
+                if item.firstname:
+                    fn = item.firstname
+                if item.middlename:
+                    mn = item.middlename
+
+                # 2. Calculate accurate age and nutritional status
+                try:
+                    bday_dt = datetime.datetime.strptime(item.birthday, '%Y-%m-%d').date()
+                    ref_date = today_dt
+                    if item.date_collected:
+                        try: ref_date = datetime.datetime.strptime(item.date_collected, '%Y-%m-%d').date()
+                        except: pass
+                    age_months = (ref_date.year - bday_dt.year) * 12 + ref_date.month - bday_dt.month
+                    stats = calculate_anthro_stats(age_months, item.gender.upper(), item.weight, item.height)
+                except:
+                    age_months = 0
+                    stats = {'bmifa_figure': 0, 'bmifa_status': 'Unknown'}
+
+                # 3. Insert into beneficiaries
+                sql_ben = """
+                INSERT INTO beneficiaries 
+                (beneficiary_id, lastname, firstname, middlename, birthday, age, gender, site_id, registration_date, created_by) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql_ben, (
+                    bid, ln, fn, mn, item.birthday, age_months,
+                    item.gender.upper(), item.site_id, today_str, '12345678'
+                ))
+
+                # 4. Insert into baseline_info (Comprehensive Anthro)
+                iid = generate_beneficiary_id()
+                sql_bl = """
+                INSERT INTO baseline_info 
+                (info_id, beneficiary_id, gender, weight, height, age, date_collected, 
+                 wfa_figure, wfa_status, hfa_figure, hfa_status, wfh_figure, wfh_status, 
+                 bmifa_figure, bmifa_status, created_at, updated_at, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s)
+                """
+                cursor.execute(sql_bl, (
+                    iid, bid, item.gender.upper(), item.weight, item.height, age_months, 
+                    item.date_collected or today_str, 
+                    stats.get('wfa_figure'), stats.get('wfa_status'),
+                    stats.get('hfa_figure'), stats.get('hfa_status'),
+                    stats.get('wfh_figure'), stats.get('wfh_status'),
+                    stats.get('bmifa_figure'), stats.get('bmifa_status'),
+                    '12345678'
+                ))
+            
+            conn.commit()
+            return {"status": "ok", "registered": len(req.items)}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally: conn.close()
+
+@app.post("/api/sync-bulk")
+def sync_bulk(req: BulkSyncRequest):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            processed_items = []
+            for item in req.items:
+                stats = _execute_baseline_sync(cursor, item)
+                processed_items.append({
+                    "beneficiary_id": item.beneficiary_id,
+                    "new_stats": stats
+                })
+            conn.commit()
+            return {"status": "ok", "processed": len(processed_items), "items": processed_items}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally: conn.close()
+
+class ForceUpdateDemographicsItem(BaseModel):
+    beneficiary_id: str
+    lastname: str
+    firstname: str
+    middlename: str = ""
+    birthday: str
+    weight: Optional[float] = None
+    height: Optional[float] = None
+    date_collected: Optional[str] = None
+    site_id: Optional[str] = None
+    update_baseline: bool = True
+
+@app.post("/api/force-update-demographics")
+def force_update_demographics(item: ForceUpdateDemographicsItem):
+    print(f"[DEBUG] Force updating demographics for ID: {item.beneficiary_id}")
+    print(f"        Values: {item.lastname}, {item.firstname}, {item.middlename}, {item.birthday}")
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            if item.site_id:
+                print(f"        Site ID: {item.site_id}")
+                sql = "UPDATE beneficiaries SET site_id = %s, lastname = %s, firstname = %s, middlename = %s, birthday = %s"
+                params = [item.site_id, item.lastname, item.firstname, item.middlename, item.birthday]
+            else:
+                sql = "UPDATE beneficiaries SET lastname = %s, firstname = %s, middlename = %s, birthday = %s"
+                params = [item.lastname, item.firstname, item.middlename, item.birthday]
+            
+            sql += " WHERE beneficiary_id = %s"
+            params.append(item.beneficiary_id)
+            cursor.execute(sql, tuple(params))
+            conn.commit()
+            print(f"[DEBUG] Identity update successful for {item.beneficiary_id}")
+    except Exception as e:
+        print(f"[ERROR] Demographics update failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+    
+    if item.update_baseline and item.weight is not None and item.height is not None:
+        sync_req = SyncItem(
+            beneficiary_id=item.beneficiary_id,
+            weight=item.weight,
+            height=item.height,
+            date_collected=item.date_collected
+        )
+        return sync_baseline(sync_req)
+    return {"status": "ok", "message": "Identity updated"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

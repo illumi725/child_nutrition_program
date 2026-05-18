@@ -1,0 +1,18 @@
+import uvicorn
+import argparse
+import sys
+import os
+
+# Ensure the backend directory is in the path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from main import app
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="HAPAG Backend")
+    parser.add_argument("--port", type=int, default=8000, help="Port to run the backend on")
+    args = parser.parse_args()
+
+    # The desktop app shouldn't really use reload=True
+    # and we bind to 127.0.0.1 to avoid exposing the API to the local network
+    uvicorn.run(app, host="127.0.0.1", port=args.port)
