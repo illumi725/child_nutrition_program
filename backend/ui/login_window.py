@@ -222,13 +222,15 @@ class LoginWindow(QWidget):
         
         if error_msg:
             log_ui("Google Sign-In failed with error_msg")
-            QMessageBox.critical(self, "Google Sign-In Failed", error_msg)
+            self.lbl_subtitle.setText(f"Google Sign-In Failed: {error_msg}")
+            self.lbl_subtitle.setStyleSheet("color: #e74c3c; font-size: 12px;")
             self.reset_google_btn()
             return
             
         if not email:
             log_ui("Google Sign-In failed: no email")
-            QMessageBox.critical(self, "Error", "Could not retrieve email from Google.")
+            self.lbl_subtitle.setText("Error: Could not retrieve email from Google.")
+            self.lbl_subtitle.setStyleSheet("color: #e74c3c; font-size: 12px;")
             self.reset_google_btn()
             return
 
@@ -238,20 +240,29 @@ class LoginWindow(QWidget):
             log_ui("Calling check_email_exists")
             is_authorized = check_email_exists(email)
             log_ui(f"check_email_exists returned: {is_authorized}")
+            db_error = None
         except Exception as e:
             import traceback
             log_ui(f"Exception during check_email_exists:\n{traceback.format_exc()}")
             is_authorized = False
+            db_error = str(e)
         
-        if is_authorized:
+        if db_error:
+            log_ui(f"Database error: {db_error}")
+            self.lbl_subtitle.setText(f"Database Connection Error: {db_error}")
+            self.lbl_subtitle.setStyleSheet("color: #e74c3c; font-size: 12px;")
+            self.reset_google_btn()
+        elif is_authorized:
             log_ui("Email authorized. Switching to page 1")
             self.authorized_email = email
             self.lbl_subtitle.setText(f"Signed in as {email}\nPlease enter your Access Code.")
+            self.lbl_subtitle.setStyleSheet("color: #2c3e50; font-size: 12px;")
             self.stack.setCurrentIndex(1)
             self.txt_access_code.setFocus()
         else:
-            log_ui("Email NOT authorized. Showing warning.")
-            QMessageBox.warning(self, "Unauthorized", f"The email '{email}' is not authorized to use this application.")
+            log_ui("Email NOT authorized.")
+            self.lbl_subtitle.setText(f"Unauthorized: '{email}' is not in the system.")
+            self.lbl_subtitle.setStyleSheet("color: #e74c3c; font-size: 12px;")
             self.reset_google_btn()
 
     def reset_google_btn(self):
