@@ -4,10 +4,13 @@ on:
   push:
     branches: [ "main", "master" ]
     tags:
-      - 'v*.*.*'        # triggers on version tags like v1.0.0
+      - 'v*.*.*'
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
+
+permissions:
+  contents: write    # Required to upload assets to GitHub Releases
 
 jobs:
   build:
