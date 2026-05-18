@@ -48,6 +48,13 @@ jobs:
         DB_PORT_PROD: ${{ secrets.DB_PORT_PROD }}
       run: python scripts/inject_config.py
 
+    - name: Inject Google SSO client secrets
+      working-directory: ./backend
+      shell: bash
+      env:
+        GOOGLE_CLIENT_SECRETS: ${{ secrets.GOOGLE_CLIENT_SECRETS_JSON }}
+      run: echo "$GOOGLE_CLIENT_SECRETS" > client_secrets.json
+
     - name: Build with PyInstaller
       working-directory: ./backend
       run: pyinstaller --clean -y hapag_comparator.spec
