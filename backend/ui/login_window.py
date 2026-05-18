@@ -42,10 +42,27 @@ class GoogleLoginThread(QThread):
                     env_patch['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
                     del os.environ['LD_LIBRARY_PATH']
 
+            import webbrowser
+            from PySide6.QtGui import QDesktopServices
+            from PySide6.QtCore import QUrl
+            
+            original_get = webbrowser.get
+            
+            class AsyncBrowser:
+                def open(self, url, new=0, autoraise=True):
+                    QDesktopServices.openUrl(QUrl(url))
+                    return True
+                    
+            def async_get(*args, **kwargs):
+                return AsyncBrowser()
+                
+            webbrowser.get = async_get
+
             try:
                 flow = InstalledAppFlow.from_client_secrets_file(client_secrets_file, scopes)
                 creds = flow.run_local_server(port=0)
             finally:
+                webbrowser.get = original_get
                 if 'LD_LIBRARY_PATH' in env_patch:
                     os.environ['LD_LIBRARY_PATH'] = env_patch['LD_LIBRARY_PATH']
             
