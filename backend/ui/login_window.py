@@ -9,6 +9,7 @@ from PySide6.QtGui import QFont
 
 class GoogleLoginThread(QThread):
     finished_auth = Signal(str, str) # email, error_message
+    open_browser = Signal(str) # url
     
     def log_debug(self, msg):
         import traceback, datetime
@@ -56,22 +57,20 @@ class GoogleLoginThread(QThread):
                     del os.environ['LD_LIBRARY_PATH']
 
             import webbrowser
-            from PySide6.QtGui import QDesktopServices
-            from PySide6.QtCore import QUrl
             
             original_get = webbrowser.get
             
             class AsyncBrowser:
-                def __init__(self, logger):
-                    self.logger = logger
+                def __init__(self, thread):
+                    self.thread = thread
                 def open(self, url, new=0, autoraise=True):
-                    self.logger("AsyncBrowser.open called with URL")
-                    QDesktopServices.openUrl(QUrl(url))
+                    self.thread.log_debug("AsyncBrowser.open called, emitting signal to main thread")
+                    self.thread.open_browser.emit(url)
                     return True
                     
             def async_get(*args, **kwargs):
                 self.log_debug(f"webbrowser.get called with args: {args}")
-                return AsyncBrowser(self.log_debug)
+                return AsyncBrowser(self)
                 
             webbrowser.get = async_get
 
@@ -201,7 +200,13 @@ class LoginWindow(QWidget):
 
         self.auth_thread = GoogleLoginThread()
         self.auth_thread.finished_auth.connect(self.on_google_auth_finished)
+        self.auth_thread.open_browser.connect(self.on_open_browser)
         self.auth_thread.start()
+
+    def on_open_browser(self, url):
+        from PySide6.QtGui import QDesktopServices
+        from PySide6.QtCore import QUrl
+        QDesktopServices.openUrl(QUrl(url))
 
     def on_google_auth_finished(self, email, error_msg):
         if error_msg:
