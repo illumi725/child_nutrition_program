@@ -10,31 +10,44 @@ from PySide6.QtGui import QFont
 class GoogleLoginThread(QThread):
     finished_auth = Signal(str, str) # email, error_message
     
+    def log_debug(self, msg):
+        import traceback, datetime
+        try:
+            log_path = os.path.expanduser("~/hapag_auth_debug.log")
+            with open(log_path, "a") as f:
+                f.write(f"{datetime.datetime.now().isoformat()} - {msg}\n")
+        except:
+            pass
+
     def run(self):
+        self.log_debug("--- Starting Google Login Thread ---")
         try:
             from google_auth_oauthlib.flow import InstalledAppFlow
             import requests
         except ImportError:
+            self.log_debug("ImportError: Missing modules")
             self.finished_auth.emit("", "Missing required Google Auth libraries.")
             return
 
         if getattr(sys, 'frozen', False):
-            # Running as PyInstaller bundle - files are unpacked to _MEIPASS
             base_dir = sys._MEIPASS
+            self.log_debug(f"Running frozen. MEIPASS: {base_dir}")
         else:
             base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            self.log_debug(f"Running locally. Base dir: {base_dir}")
             
         client_secrets_file = os.path.join(base_dir, 'client_secrets.json')
             
         if not os.path.exists(client_secrets_file):
+            self.log_debug("Error: client_secrets.json not found")
             self.finished_auth.emit("", "Missing client_secrets.json file. Cannot authenticate with Google.")
             return
 
         scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile']
         try:
-            # Fix PyInstaller Linux bug breaking webbrowser.open due to modified LD_LIBRARY_PATH
             env_patch = {}
             if getattr(sys, 'frozen', False) and sys.platform.startswith('linux'):
+                self.log_debug("Patching LD_LIBRARY_PATH for Linux frozen bundle")
                 if 'LD_LIBRARY_PATH_ORIG' in os.environ:
                     env_patch['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '')
                     os.environ['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH_ORIG']
@@ -49,32 +62,48 @@ class GoogleLoginThread(QThread):
             original_get = webbrowser.get
             
             class AsyncBrowser:
+                def __init__(self, logger):
+                    self.logger = logger
                 def open(self, url, new=0, autoraise=True):
+                    self.logger("AsyncBrowser.open called with URL")
                     QDesktopServices.openUrl(QUrl(url))
                     return True
                     
             def async_get(*args, **kwargs):
-                return AsyncBrowser()
+                self.log_debug(f"webbrowser.get called with args: {args}")
+                return AsyncBrowser(self.log_debug)
                 
             webbrowser.get = async_get
 
             try:
+                self.log_debug("Initializing InstalledAppFlow")
                 flow = InstalledAppFlow.from_client_secrets_file(client_secrets_file, scopes)
+                self.log_debug("Calling flow.run_local_server(port=0)")
                 creds = flow.run_local_server(port=0)
+                self.log_debug("Returned from flow.run_local_server!")
             finally:
+                self.log_debug("Restoring webbrowser.get and LD_LIBRARY_PATH")
                 webbrowser.get = original_get
                 if 'LD_LIBRARY_PATH' in env_patch:
                     os.environ['LD_LIBRARY_PATH'] = env_patch['LD_LIBRARY_PATH']
             
+            self.log_debug("Requesting userinfo from Google API...")
             response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo', headers={'Authorization': f'Bearer {creds.token}'})
+            self.log_debug(f"Userinfo response status: {response.status_code}")
+            
             if response.status_code == 200:
                 user_info = response.json()
                 email = user_info.get('email', '')
+                self.log_debug(f"Success! Email: {email}")
                 self.finished_auth.emit(email, "")
             else:
+                self.log_debug("Failed to fetch user info")
                 self.finished_auth.emit("", f"Failed to fetch user info: HTTP {response.status_code}")
 
         except Exception as e:
+            import traceback
+            err = traceback.format_exc()
+            self.log_debug(f"CRITICAL EXCEPTION:\n{err}")
             self.finished_auth.emit("", str(e))
 
 
