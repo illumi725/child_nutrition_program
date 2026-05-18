@@ -209,25 +209,48 @@ class LoginWindow(QWidget):
         QDesktopServices.openUrl(QUrl(url))
 
     def on_google_auth_finished(self, email, error_msg):
+        def log_ui(msg):
+            try:
+                import datetime
+                log_path = os.path.expanduser("~/hapag_auth_debug.log")
+                with open(log_path, "a") as f:
+                    f.write(f"{datetime.datetime.now().isoformat()} - [UI] {msg}\n")
+            except:
+                pass
+                
+        log_ui(f"on_google_auth_finished called. email: {email}, error_msg: {error_msg}")
+        
         if error_msg:
+            log_ui("Google Sign-In failed with error_msg")
             QMessageBox.critical(self, "Google Sign-In Failed", error_msg)
             self.reset_google_btn()
             return
             
         if not email:
+            log_ui("Google Sign-In failed: no email")
             QMessageBox.critical(self, "Error", "Could not retrieve email from Google.")
             self.reset_google_btn()
             return
 
-        from core.database import check_email_exists
-        is_authorized = check_email_exists(email)
+        try:
+            log_ui("Importing core.database")
+            from core.database import check_email_exists
+            log_ui("Calling check_email_exists")
+            is_authorized = check_email_exists(email)
+            log_ui(f"check_email_exists returned: {is_authorized}")
+        except Exception as e:
+            import traceback
+            log_ui(f"Exception during check_email_exists:\n{traceback.format_exc()}")
+            is_authorized = False
         
         if is_authorized:
+            log_ui("Email authorized. Switching to page 1")
             self.authorized_email = email
             self.lbl_subtitle.setText(f"Signed in as {email}\nPlease enter your Access Code.")
             self.stack.setCurrentIndex(1)
             self.txt_access_code.setFocus()
         else:
+            log_ui("Email NOT authorized. Showing warning.")
             QMessageBox.warning(self, "Unauthorized", f"The email '{email}' is not authorized to use this application.")
             self.reset_google_btn()
 
