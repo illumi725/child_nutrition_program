@@ -46,6 +46,21 @@ def _get_local_connection():
         
     conn.row_factory = dict_factory
     conn.execute("PRAGMA foreign_keys=OFF")
+    
+    # Auto-create crucial SQLite indexes for local query optimization
+    try:
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_beneficiaries_site_id ON beneficiaries(site_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_baseline_info_beneficiary_id ON baseline_info(beneficiary_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_baseline_info_created_at ON baseline_info(created_at)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_baseline_info_beneficiary_created ON baseline_info(beneficiary_id, created_at DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_sites_barangay_code ON sites(barangay_code)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_barangays_barangay_code ON barangays(barangay_code)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_cities_municipalities_citymun_code ON cities_municipalities(citymun_code)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_provinces_province_code ON provinces(province_code)")
+        conn.commit()
+    except Exception as e:
+        print(f"[INDEX-SETUP-WARNING] {e}")
+        
     return SQLiteConnectionWrapper(conn)
 
 # ── SQLite Compatibility Wrapper ──────────────────────────────────────────────
