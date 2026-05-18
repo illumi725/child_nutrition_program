@@ -33,9 +33,71 @@ def _get_local_connection():
             "Please go to Settings and run a full replication first."
         )
     conn = sqlite3.connect(path)
-    conn.row_factory = sqlite3.Row
+    
+    # SQLite dict factory
+    def dict_factory(cursor, row):
+        d = {}
+        for idx, col in enumerate(cursor.description):
+            d[col[0]] = row[idx]
+        return d
+        
+    conn.row_factory = dict_factory
     conn.execute("PRAGMA foreign_keys=OFF")
-    return conn
+    return SQLiteConnectionWrapper(conn)
+
+# ── SQLite Compatibility Wrapper ──────────────────────────────────────────────
+
+class SQLiteCursorWrapper:
+    """Makes sqlite3 cursor act like PyMySQL (context manager + %s params)"""
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def execute(self, sql, args=None):
+        sql = sql.replace('%s', '?')
+        if args is not None:
+            return self._cursor.execute(sql, args)
+        return self._cursor.execute(sql)
+        
+    def executemany(self, sql, args):
+        sql = sql.replace('%s', '?')
+        return self._cursor.executemany(sql, args)
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._cursor.close()
+
+    @property
+    def lastrowid(self):
+        return self._cursor.lastrowid
+        
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+
+class SQLiteConnectionWrapper:
+    """Makes sqlite3 connection act like PyMySQL connection"""
+    def __init__(self, conn):
+        self._conn = conn
+
+    def cursor(self):
+        return SQLiteCursorWrapper(self._conn.cursor())
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
 
 
 def fetch_beneficiaries() -> List[Dict[str, Any]]:
@@ -248,7 +310,11 @@ def generate_beneficiary_id():
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
 def authenticate_user(access_code):
-    conn = get_db_connection()
+    try:
+        conn = get_db_connection()
+    except FileNotFoundError:
+        conn = _get_cloud_connection()
+        
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT user_id, firstname, lastname, role FROM users WHERE access_code = %s AND deleted_at IS NULL", (access_code,))
@@ -260,7 +326,11 @@ def authenticate_user(access_code):
         conn.close()
 
 def check_email_exists(email):
-    conn = get_db_connection()
+    try:
+        conn = get_db_connection()
+    except FileNotFoundError:
+        conn = _get_cloud_connection()
+        
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT user_id FROM users WHERE email = %s AND deleted_at IS NULL", (email,))
