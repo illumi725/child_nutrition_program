@@ -51,6 +51,7 @@ jobs:
         DB_PASSWORD_PROD: ${{ secrets.DB_PASSWORD_PROD }}
         DB_DATABASE_PROD: ${{ secrets.DB_DATABASE_PROD }}
         DB_PORT_PROD: ${{ secrets.DB_PORT_PROD }}
+        APP_VERSION_TAG: ${{ github.ref_name }}
       run: python scripts/inject_config.py
 
     - name: Inject Google SSO client secrets
