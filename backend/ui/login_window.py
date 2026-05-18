@@ -32,8 +32,22 @@ class GoogleLoginThread(QThread):
 
         scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile']
         try:
-            flow = InstalledAppFlow.from_client_secrets_file(client_secrets_file, scopes)
-            creds = flow.run_local_server(port=0)
+            # Fix PyInstaller Linux bug breaking webbrowser.open due to modified LD_LIBRARY_PATH
+            env_patch = {}
+            if getattr(sys, 'frozen', False) and sys.platform.startswith('linux'):
+                if 'LD_LIBRARY_PATH_ORIG' in os.environ:
+                    env_patch['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '')
+                    os.environ['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH_ORIG']
+                elif 'LD_LIBRARY_PATH' in os.environ:
+                    env_patch['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
+                    del os.environ['LD_LIBRARY_PATH']
+
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file(client_secrets_file, scopes)
+                creds = flow.run_local_server(port=0)
+            finally:
+                if 'LD_LIBRARY_PATH' in env_patch:
+                    os.environ['LD_LIBRARY_PATH'] = env_patch['LD_LIBRARY_PATH']
             
             response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo', headers={'Authorization': f'Bearer {creds.token}'})
             if response.status_code == 200:
