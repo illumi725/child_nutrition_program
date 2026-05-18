@@ -19,7 +19,8 @@ class GoogleLoginThread(QThread):
             return
 
         if getattr(sys, 'frozen', False):
-            base_dir = os.path.dirname(sys.executable)
+            # Running as PyInstaller bundle - files are unpacked to _MEIPASS
+            base_dir = sys._MEIPASS
         else:
             base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
             
