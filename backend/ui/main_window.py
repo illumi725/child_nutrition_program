@@ -2,7 +2,7 @@ import os
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                                QSplitter, QTabWidget, QPushButton, QLabel, QProgressBar,
                                QApplication, QPlainTextEdit, QSizePolicy)
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from ui.components.file_explorer import FileExplorer
 from ui.components.data_grid import ResultsDataGrid
 from ui.workers import ScanWorker
@@ -23,8 +23,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.current_user = current_user
         user_display = f"{current_user['firstname']} {current_user['lastname']} ({current_user['role']})" if current_user else "Unknown User"
-        self.setWindowTitle(f"HAPAG Form 5A Comparator - Native - Logged in as: {user_display}")
+        self._update_window_title(user_display)
         self.resize(1200, 800)
+        self._auto_sync_timer = None
 
         # Central Widget & Layout
         central_widget = QWidget()
@@ -84,6 +85,10 @@ class MainWindow(QMainWindow):
         right_layout = QVBoxLayout(right_panel)
         
         right_header_layout = QHBoxLayout()
+        self.btn_settings = QPushButton("⚙ Settings")
+        self.btn_settings.setStyleSheet("background-color: #555; color: white; font-weight: bold; padding: 5px;")
+        self.btn_settings.clicked.connect(self.open_settings)
+        
         self.btn_dashboard = QPushButton("📊 System Dashboard")
         self.btn_dashboard.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
         self.btn_dashboard.clicked.connect(self.open_dashboard)
@@ -95,6 +100,7 @@ class MainWindow(QMainWindow):
         right_header_layout.addStretch()
         right_header_layout.addWidget(self.btn_search_beneficiary)
         right_header_layout.addWidget(self.btn_dashboard)
+        right_header_layout.addWidget(self.btn_settings)
         
         right_layout.addLayout(right_header_layout)
 
@@ -265,6 +271,9 @@ class MainWindow(QMainWindow):
             {"label": "DB Date", "key": "db.date_collected", "getter": lambda r: format_display_date(r['db'].get('date_collected'))},
             {"label": "Score", "key": "score"}
         ]
+
+        # Start auto-sync if Local mode is active
+        self._start_auto_sync_timer()
 
     def on_grid_action(self, action_name, record, action_widget):
         from core.database import sync_baseline
@@ -645,6 +654,43 @@ class MainWindow(QMainWindow):
         from ui.search_window import SearchBeneficiaryWindow
         search = SearchBeneficiaryWindow(self)
         search.exec()
+
+    def open_settings(self):
+        from ui.components.settings_dialog import SettingsDialog
+        dlg = SettingsDialog(self)
+        dlg.exec()
+        # Refresh title after settings change (mode may have changed)
+        user_display = (f"{self.current_user['firstname']} {self.current_user['lastname']} "
+                        f"({self.current_user['role']})") if self.current_user else "Unknown User"
+        self._update_window_title(user_display)
+        self._start_auto_sync_timer()
+
+    def _update_window_title(self, user_display: str):
+        from core.app_settings import get_mode
+        mode_tag = "☁ CLOUD" if get_mode() == 'cloud' else "💾 LOCAL"
+        self.setWindowTitle(f"HAPAG Form 5A Comparator [{mode_tag}] — {user_display}")
+
+    def _start_auto_sync_timer(self):
+        from core.app_settings import get_mode, get_auto_sync_enabled, get_auto_sync_interval
+        if self._auto_sync_timer:
+            self._auto_sync_timer.stop()
+            self._auto_sync_timer = None
+
+        if get_mode() == 'local' and get_auto_sync_enabled():
+            interval_ms = get_auto_sync_interval() * 60 * 1000
+            self._auto_sync_timer = QTimer(self)
+            self._auto_sync_timer.setInterval(interval_ms)
+            self._auto_sync_timer.timeout.connect(self._run_background_sync)
+            self._auto_sync_timer.start()
+            self.log_message(f"🔄 Auto-sync enabled every {get_auto_sync_interval()} min.")
+
+    def _run_background_sync(self):
+        from core.sync_engine import SyncWorker
+        self.log_message("🔄 Auto-sync started...")
+        worker = SyncWorker(mode=SyncWorker.MODE_SYNC, parent=self)
+        worker.finished.connect(lambda ok, msg: self.log_message(f"🔄 Auto-sync: {msg}"))
+        worker.error.connect(lambda e: self.log_message(f"⚠ Auto-sync error: {e}"))
+        worker.start()
 
     def _toggle_console(self, checked):
         self.console.setVisible(checked)

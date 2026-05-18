@@ -38,6 +38,16 @@ jobs:
         pip install -r backend/requirements.txt
         pip install pyinstaller
 
+    - name: Inject production credentials
+      working-directory: ./backend
+      env:
+        DB_HOST_PROD: ${{ secrets.DB_HOST_PROD }}
+        DB_USERNAME_PROD: ${{ secrets.DB_USERNAME_PROD }}
+        DB_PASSWORD_PROD: ${{ secrets.DB_PASSWORD_PROD }}
+        DB_DATABASE_PROD: ${{ secrets.DB_DATABASE_PROD }}
+        DB_PORT_PROD: ${{ secrets.DB_PORT_PROD }}
+      run: python scripts/inject_config.py
+
     - name: Build with PyInstaller
       working-directory: ./backend
       run: pyinstaller --clean -y hapag_comparator.spec

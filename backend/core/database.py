@@ -1,38 +1,42 @@
 import os
+import sys
+import sqlite3
 import pymysql
 import datetime
 from decimal import Decimal
 from typing import List, Dict, Any
 
-def get_db_creds():
-    creds = {}
-    import sys
-    if getattr(sys, 'frozen', False):
-        # Running as PyInstaller bundle
-        base_dir = os.path.dirname(sys.executable)
-    else:
-        # Running as normal Python script
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        
-    db_dat_path = os.path.join(base_dir, "db.dat")
-    
-    if not os.path.exists(db_dat_path): return creds
-    with open(db_dat_path, 'r') as f:
-        for line in f:
-            if '=' in line:
-                key, val = line.strip().split('=', 1)
-                creds[key] = val.strip('"')
-    return creds
+# ── Connection Routing ────────────────────────────────────────────────────────
 
 def get_db_connection():
-    creds = get_db_creds()
-    host = creds.get('DB_HOST')
-    db = creds.get('DB_DATABASE')
+    """Return a database connection based on the current mode (cloud/local)."""
+    from core.app_settings import get_mode
+    if get_mode() == 'local':
+        return _get_local_connection()
+    return _get_cloud_connection()
+
+def _get_cloud_connection():
+    from core._config import (CLOUD_DB_HOST, CLOUD_DB_USER, CLOUD_DB_PASSWORD,
+                               CLOUD_DB_DATABASE, CLOUD_DB_PORT)
     return pymysql.connect(
-        host=host, user=creds.get('DB_USERNAME'), password=creds.get('DB_PASSWORD'),
-        database=db, port=int(creds.get('DB_PORT', 3306)),
-        cursorclass=pymysql.cursors.DictCursor
+        host=CLOUD_DB_HOST, user=CLOUD_DB_USER, password=CLOUD_DB_PASSWORD,
+        database=CLOUD_DB_DATABASE, port=CLOUD_DB_PORT,
+        cursorclass=pymysql.cursors.DictCursor, connect_timeout=10
     )
+
+def _get_local_connection():
+    from core.app_settings import get_local_db_path
+    path = get_local_db_path()
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"Local database not found at {path}.\n"
+            "Please go to Settings and run a full replication first."
+        )
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys=OFF")
+    return conn
+
 
 def fetch_beneficiaries() -> List[Dict[str, Any]]:
     connection = get_db_connection()
