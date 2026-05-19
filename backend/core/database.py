@@ -327,7 +327,7 @@ def generate_beneficiary_id():
     import string
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
-def authenticate_user(access_code):
+def authenticate_user(access_code, email=None):
     try:
         conn = get_db_connection()
     except FileNotFoundError:
@@ -335,7 +335,16 @@ def authenticate_user(access_code):
         
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT user_id, firstname, lastname, role FROM users WHERE access_code = %s AND deleted_at IS NULL", (access_code,))
+            if email:
+                cursor.execute(
+                    "SELECT user_id, firstname, lastname, role, email FROM users WHERE access_code = %s AND email = %s AND deleted_at IS NULL",
+                    (access_code, email)
+                )
+            else:
+                cursor.execute(
+                    "SELECT user_id, firstname, lastname, role, email FROM users WHERE access_code = %s AND deleted_at IS NULL",
+                    (access_code,)
+                )
             return cursor.fetchone()
     except Exception as e:
         print(f"[AUTH-ERROR] {e}")

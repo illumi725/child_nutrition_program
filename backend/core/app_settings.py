@@ -77,3 +77,17 @@ def set_last_synced(ts: str):
     d = _load()
     d['last_synced'] = ts
     _save(d)
+
+def get_cached_email() -> str | None:
+    return _load().get('cached_email', None)
+
+def set_cached_email(email: str):
+    d = _load()
+    d['cached_email'] = email
+    _save(d)
+
+def clear_cached_email():
+    d = _load()
+    if 'cached_email' in d:
+        del d['cached_email']
+    _save(d)

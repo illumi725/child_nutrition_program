@@ -118,6 +118,17 @@ class LoginWindow(QWidget):
         
         self.setup_ui()
         
+        # Check for persistent Google SSO session
+        from core.app_settings import get_cached_email
+        cached_email = get_cached_email()
+        if cached_email:
+            self.authorized_email = cached_email
+            self.lbl_subtitle.setText(f"Signed in as {cached_email}\nPlease enter your Access Code.")
+            self.lbl_subtitle.setStyleSheet("color: #2c3e50; font-size: 12px;")
+            self.stack.setCurrentIndex(1)
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(100, lambda: self.txt_access_code.setFocus())
+        
     def setup_ui(self):
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignCenter)
@@ -183,8 +194,19 @@ class LoginWindow(QWidget):
         """)
         self.btn_login.clicked.connect(self.attempt_login)
         
+        self.btn_switch_account = QPushButton("Sign in with a different Google account")
+        self.btn_switch_account.setStyleSheet("""
+            QPushButton {
+                background: transparent; border: none; color: #2980b9; font-size: 11px;
+                text-decoration: underline; margin-top: 5px;
+            }
+            QPushButton:hover { color: #3498db; }
+        """)
+        self.btn_switch_account.clicked.connect(self.switch_google_account)
+        
         pc_layout.addWidget(self.txt_access_code)
         pc_layout.addWidget(self.btn_login)
+        pc_layout.addWidget(self.btn_switch_account)
         self.stack.addWidget(page_code)
         
         layout.addWidget(lbl_title)
@@ -255,6 +277,11 @@ class LoginWindow(QWidget):
         elif is_authorized:
             log_ui("Email authorized. Switching to page 1")
             self.authorized_email = email
+            
+            # Persist Google SSO email session
+            from core.app_settings import set_cached_email
+            set_cached_email(email)
+            
             self.lbl_subtitle.setText(f"Signed in as {email}\nPlease enter your Access Code.")
             self.lbl_subtitle.setStyleSheet("color: #2c3e50; font-size: 12px;")
             self.stack.setCurrentIndex(1)
@@ -270,6 +297,14 @@ class LoginWindow(QWidget):
         self.btn_google.setText("Sign in with Google")
         self.lbl_subtitle.setText("Please sign in with your Google Account.")
 
+    def switch_google_account(self):
+        from core.app_settings import clear_cached_email
+        clear_cached_email()
+        self.authorized_email = None
+        self.lbl_subtitle.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+        self.reset_google_btn()
+        self.stack.setCurrentIndex(0)
+
     def attempt_login(self):
         code = self.txt_access_code.text().strip()
         if not code:
@@ -281,7 +316,7 @@ class LoginWindow(QWidget):
         QApplication.processEvents()
         
         from core.database import authenticate_user
-        user = authenticate_user(code)
+        user = authenticate_user(code, self.authorized_email)
         
         if user:
             self.login_successful.emit(user)
