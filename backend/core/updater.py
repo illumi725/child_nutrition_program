@@ -14,6 +14,7 @@ class UpdateCheckThread(QThread):
     # str: direct html url to the release page
     # str: platform-specific download url
     update_available = Signal(str, str, str, str)
+    up_to_date = Signal()
     error_occurred = Signal(str)
 
     def __init__(self, parent=None):
@@ -52,6 +53,8 @@ class UpdateCheckThread(QThread):
                         download_url = f"https://github.com/illumi725/child_nutrition_program/releases/download/{tag}/hapag-comparator-linux.zip"
                         
                     self.update_available.emit(latest_tag, body, html_url, download_url)
+                else:
+                    self.up_to_date.emit()
             else:
                 self.error_occurred.emit(f"GitHub API returned {response.status_code}")
         except Exception as e:

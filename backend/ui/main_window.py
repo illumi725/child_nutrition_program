@@ -859,25 +859,86 @@ class MainWindow(QMainWindow):
 
     def open_about(self):
         from PySide6.QtWidgets import QMessageBox
-        from core.version import APP_VERSION
+        from core.version import APP_VERSION, APP_RELEASE_DATE
         import datetime
         
         current_year = datetime.date.today().year
         
         about_text = (
             "HAPAG Form 5A Comparator\n\n"
-            f"Version: {APP_VERSION}\n\n"
+            f"Version: {APP_VERSION}\n"
+            f"Update Date: {APP_RELEASE_DATE}\n\n"
             "Developed By: Jhay [06194]\n"
             "Agile Transformation Office\n\n"
             "ASA Philippines Foundation, Inc. (A Microfinance NGO)\n\n"
             f"All Rights Reserved. © {current_year}"
         )
         
-        QMessageBox.information(
-            self,
-            "About HAPAG Form 5A Comparator",
-            about_text
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("About HAPAG Form 5A Comparator")
+        msg_box.setText(about_text)
+        msg_box.setIcon(QMessageBox.Information)
+        
+        # Add custom Check for Updates button
+        btn_check = msg_box.addButton("Check for Updates", QMessageBox.ActionRole)
+        msg_box.addButton(QMessageBox.Ok)
+        
+        msg_box.exec()
+        
+        if msg_box.clickedButton() == btn_check:
+            self.check_for_updates_manual()
+
+    def check_for_updates_manual(self):
+        from PySide6.QtWidgets import QProgressDialog, QMessageBox
+        from core.updater import UpdateCheckThread
+        
+        self.manual_progress = QProgressDialog(
+            "Checking for updates...\nConnecting to GitHub server...", 
+            "Cancel", 0, 0, self
         )
+        self.manual_progress.setWindowTitle("Check for Updates")
+        self.manual_progress.setWindowModality(Qt.WindowModal)
+        self.manual_progress.setMinimumDuration(0)
+        self.manual_progress.show()
+        
+        self.manual_updater_thread = UpdateCheckThread(self)
+        
+        def on_avail(tag, body, html_url, download_url):
+            self.manual_progress.close()
+            self.on_update_available(tag, body, html_url, download_url)
+            
+        def on_uptodate():
+            self.manual_progress.close()
+            from core.version import APP_VERSION
+            QMessageBox.information(
+                self,
+                "App Up to Date",
+                f"You are running the latest version: {APP_VERSION}.\n"
+                "No updates are available at this time."
+            )
+            
+        def on_error(err_msg):
+            self.manual_progress.close()
+            QMessageBox.warning(
+                self,
+                "Check Failed",
+                f"Failed to check for updates:\n{err_msg}"
+            )
+            
+        def on_cancel():
+            try:
+                self.manual_updater_thread.update_available.disconnect()
+                self.manual_updater_thread.up_to_date.disconnect()
+                self.manual_updater_thread.error_occurred.disconnect()
+            except:
+                pass
+            
+        self.manual_updater_thread.update_available.connect(on_avail)
+        self.manual_updater_thread.up_to_date.connect(on_uptodate)
+        self.manual_updater_thread.error_occurred.connect(on_error)
+        self.manual_progress.canceled.connect(on_cancel)
+        
+        self.manual_updater_thread.start()
 
     def open_user_manual(self):
         dlg = UserManualBrowser(self)
