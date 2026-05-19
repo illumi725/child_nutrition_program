@@ -109,10 +109,35 @@ class SettingsDialog(QDialog):
         set_auto_sync_interval(self.spin_interval.value())
 
         if old_mode != new_mode:
-            QMessageBox.information(self, "Restart Required",
+            import sys
+            import subprocess
+            from PySide6.QtWidgets import QApplication
+
+            QMessageBox.information(
+                self,
+                "Restarting Application",
                 f"Mode switched to {'☁ Cloud' if new_mode == 'cloud' else '💾 Local'}.\n"
-                "Please restart the application for the change to take effect.")
-        self.accept()
+                "The application will now restart to apply this change."
+            )
+            
+            # Close this dialog
+            self.accept()
+            
+            # Formulate the restart command to support raw python and compiled PyInstaller executables
+            args = sys.argv[:]
+            if getattr(sys, 'frozen', False):
+                cmd = [sys.executable] + args[1:]
+            else:
+                cmd = [sys.executable] + args
+                
+            try:
+                subprocess.Popen(cmd)
+            except Exception as e:
+                pass
+                
+            QApplication.quit()
+        else:
+            self.accept()
 
     def _run_sync(self):
         self._start_sync_worker(mode='sync')
