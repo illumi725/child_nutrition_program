@@ -2,7 +2,7 @@ import sys
 import os
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, 
-    QMessageBox, QApplication, QStackedWidget
+    QMessageBox, QApplication, QStackedWidget, QDialog
 )
 from PySide6.QtCore import Qt, Signal, QThread
 from PySide6.QtGui import QFont
@@ -65,6 +65,17 @@ class GoogleLoginThread(QThread):
                     self.thread = thread
                 def open(self, url, new=0, autoraise=True):
                     self.thread.log_debug("AsyncBrowser.open called, emitting signal to main thread")
+                    try:
+                        from urllib.parse import urlparse, parse_qs
+                        parsed_url = urlparse(url)
+                        query_params = parse_qs(parsed_url.query)
+                        redirect_uri = query_params.get('redirect_uri', [''])[0]
+                        if redirect_uri:
+                            parsed_redirect = urlparse(redirect_uri)
+                            self.thread.local_port = parsed_redirect.port
+                            self.thread.log_debug(f"Captured local server port: {self.thread.local_port}")
+                    except Exception as e:
+                        self.thread.log_debug(f"Error parsing local port: {e}")
                     self.thread.open_browser.emit(url)
                     return True
                     
@@ -104,6 +115,31 @@ class GoogleLoginThread(QThread):
             err = traceback.format_exc()
             self.log_debug(f"CRITICAL EXCEPTION:\n{err}")
             self.finished_auth.emit("", str(e))
+
+
+class BuiltInSSOBrowser(QDialog):
+    def __init__(self, url, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Google Sign-In")
+        self.resize(600, 700)
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        from PySide6.QtWebEngineWidgets import QWebEngineView
+        from PySide6.QtCore import QUrl
+        
+        self.web_view = QWebEngineView(self)
+        layout.addWidget(self.web_view)
+        
+        # Override User-Agent to standard desktop Chrome to bypass Google's embedded browser block
+        profile = self.web_view.page().profile()
+        profile.setHttpUserAgent(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        )
+        
+        self.web_view.setUrl(QUrl(url))
 
 
 class LoginWindow(QWidget):
@@ -226,9 +262,36 @@ class LoginWindow(QWidget):
         self.auth_thread.start()
 
     def on_open_browser(self, url):
-        from PySide6.QtGui import QDesktopServices
-        from PySide6.QtCore import QUrl
-        QDesktopServices.openUrl(QUrl(url))
+        self.sso_browser = BuiltInSSOBrowser(url, self)
+        self.sso_browser.finished.connect(self.on_sso_browser_finished)
+        self.sso_browser.show()
+
+    def on_sso_browser_finished(self, result):
+        self.sso_browser = None
+        if self.btn_google.text() == "Waiting for browser...":
+            try:
+                import datetime
+                log_path = os.path.expanduser("~/hapag_auth_debug.log")
+                with open(log_path, "a") as f:
+                    f.write(f"{datetime.datetime.now().isoformat()} - [UI] SSO Browser closed manually by the user\n")
+            except:
+                pass
+            
+            self.lbl_subtitle.setText("Sign-in cancelled.")
+            self.lbl_subtitle.setStyleSheet("color: #e74c3c; font-size: 12px;")
+            self.reset_google_btn()
+            
+            # Unblock the background server safely by hitting it with a dummy request
+            port = getattr(self.auth_thread, 'local_port', None)
+            if port:
+                def shutdown_server():
+                    try:
+                        import requests
+                        requests.get(f"http://localhost:{port}/?error=cancelled", timeout=2)
+                    except:
+                        pass
+                import threading
+                threading.Thread(target=shutdown_server, daemon=True).start()
 
     def on_google_auth_finished(self, email, error_msg):
         def log_ui(msg):
@@ -241,6 +304,15 @@ class LoginWindow(QWidget):
                 pass
                 
         log_ui(f"on_google_auth_finished called. email: {email}, error_msg: {error_msg}")
+        
+        # Close the built-in SSO browser if it's still open
+        if hasattr(self, 'sso_browser') and self.sso_browser:
+            try:
+                self.sso_browser.blockSignals(True)
+                self.sso_browser.close()
+            except:
+                pass
+            self.sso_browser = None
         
         if error_msg:
             log_ui("Google Sign-In failed with error_msg")
