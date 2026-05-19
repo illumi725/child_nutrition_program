@@ -5,7 +5,7 @@ a = Analysis(
     ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[('data/who_standards_lms.json', 'data'), ('client_secrets.json', '.')],
+    datas=[('data/who_standards_lms.json', 'data'), ('client_secrets.json', '.'), ('ui/manual.html', 'ui')],
     hiddenimports=['dateparser', 'fuzzywuzzy', 'pymysql', 'openpyxl', 'pandas'],
     hookspath=[],
     hooksconfig={},

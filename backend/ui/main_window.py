@@ -859,8 +859,12 @@ class MainWindow(QMainWindow):
 
     def open_about(self):
         from PySide6.QtWidgets import QMessageBox
-        from core.version import APP_VERSION, APP_RELEASE_DATE
         import datetime
+        try:
+            from core.version import APP_VERSION, APP_RELEASE_DATE
+        except ImportError:
+            from core.version import APP_VERSION
+            APP_RELEASE_DATE = datetime.date.today().strftime("%B %d, %Y")
         
         current_year = datetime.date.today().year
         
