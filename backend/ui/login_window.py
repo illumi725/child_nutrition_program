@@ -191,7 +191,7 @@ class BuiltInSSOBrowser(QDialog):
         self.stack.addWidget(self.success_widget)
         
         # Timer tracking
-        self.countdown = 3
+        self.countdown = 5
         self.on_close_callback = None
         self.timer = None
 
@@ -229,7 +229,7 @@ class LoginWindow(QWidget):
         self.setup_ui()
         
         # Check for persistent Google SSO session
-        from core.app_settings import get_cached_email
+        from core.app_settings import get_cached_email, get_recent_emails
         cached_email = get_cached_email()
         if cached_email:
             self.authorized_email = cached_email
@@ -238,6 +238,13 @@ class LoginWindow(QWidget):
             self.stack.setCurrentIndex(1)
             from PySide6.QtCore import QTimer
             QTimer.singleShot(100, lambda: self.txt_access_code.setFocus())
+        else:
+            recent = get_recent_emails()
+            if recent:
+                self.lbl_subtitle.setText("Choose an account to continue.")
+                self.lbl_subtitle.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+                self.update_recent_accounts_list()
+                self.stack.setCurrentIndex(2)
         
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -318,6 +325,29 @@ class LoginWindow(QWidget):
         pc_layout.addWidget(self.btn_login)
         pc_layout.addWidget(self.btn_switch_account)
         self.stack.addWidget(page_code)
+        
+        # Page 2: Choose Account
+        self.page_choose_account = QWidget()
+        pc_acc_layout = QVBoxLayout(self.page_choose_account)
+        pc_acc_layout.setContentsMargins(10, 5, 10, 5)
+        pc_acc_layout.setSpacing(10)
+        
+        self.recent_list_layout = QVBoxLayout()
+        self.recent_list_layout.setSpacing(8)
+        pc_acc_layout.addLayout(self.recent_list_layout)
+        
+        self.btn_use_another = QPushButton("＋ Use another account")
+        self.btn_use_another.setStyleSheet("""
+            QPushButton {
+                background-color: #ffffff; color: #2980b9; font-weight: bold;
+                padding: 8px; border: 1px dashed #2980b9; border-radius: 5px; font-size: 13px;
+            }
+            QPushButton:hover { background-color: #f6fbfe; }
+        """)
+        self.btn_use_another.clicked.connect(self.show_google_sign_in_page)
+        pc_acc_layout.addWidget(self.btn_use_another)
+        
+        self.stack.addWidget(self.page_choose_account)
         
         layout.addWidget(lbl_title)
         layout.addWidget(self.lbl_subtitle)
@@ -460,12 +490,119 @@ class LoginWindow(QWidget):
         self.lbl_subtitle.setText("Please sign in with your Google Account.")
 
     def switch_google_account(self):
-        from core.app_settings import clear_cached_email
+        from core.app_settings import clear_cached_email, get_recent_emails
         clear_cached_email()
         self.authorized_email = None
+        
+        recent = get_recent_emails()
+        if recent:
+            self.lbl_subtitle.setText("Choose an account to continue.")
+            self.lbl_subtitle.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+            self.update_recent_accounts_list()
+            self.stack.setCurrentIndex(2)
+        else:
+            self.lbl_subtitle.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+            self.reset_google_btn()
+            self.stack.setCurrentIndex(0)
+
+    def show_google_sign_in_page(self):
+        self.lbl_subtitle.setText("Please sign in with your Google Account.")
         self.lbl_subtitle.setStyleSheet("color: #7f8c8d; font-size: 12px;")
         self.reset_google_btn()
         self.stack.setCurrentIndex(0)
+
+    def update_recent_accounts_list(self):
+        # Clear previous items from layout
+        while self.recent_list_layout.count():
+            item = self.recent_list_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+                
+        from core.app_settings import get_recent_emails
+        recent_emails = get_recent_emails()
+        
+        # Limit to the last 3 accounts for clean visual space in the fixed window size
+        for email in recent_emails[-3:]:
+            row_widget = QWidget()
+            row_widget.setStyleSheet("""
+                QWidget {
+                    background-color: #f8f9fa;
+                    border: 1px solid #e9ecef;
+                    border-radius: 5px;
+                }
+                QWidget:hover {
+                    background-color: #e9ecef;
+                }
+            """)
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(8, 5, 8, 5)
+            row_layout.setSpacing(5)
+            
+            # Clickable account selection button
+            btn_email = QPushButton(email)
+            btn_email.setStyleSheet("""
+                QPushButton {
+                    background: transparent;
+                    border: none;
+                    color: #2c3e50;
+                    font-weight: bold;
+                    text-align: left;
+                    font-size: 12px;
+                    padding: 5px;
+                }
+            """)
+            btn_email.clicked.connect(lambda checked=False, em=email: self.select_recent_account(em))
+            
+            # Small delete button next to email
+            btn_remove = QPushButton("✕")
+            btn_remove.setToolTip("Remove account from this list")
+            btn_remove.setStyleSheet("""
+                QPushButton {
+                    background: transparent;
+                    border: none;
+                    color: #e74c3c;
+                    font-weight: bold;
+                    font-size: 14px;
+                    padding: 2px;
+                }
+                QPushButton:hover {
+                    color: #c0392b;
+                }
+            """)
+            btn_remove.clicked.connect(lambda checked=False, em=email: self.remove_recent_account_from_list(em))
+            
+            row_layout.addWidget(btn_email, 1)
+            row_layout.addWidget(btn_remove)
+            
+            self.recent_list_layout.addWidget(row_widget)
+
+    def select_recent_account(self, email):
+        # Checks if email exists in database (offline or online)
+        from core.database import check_email_exists
+        if check_email_exists(email):
+            # Set active cached email
+            from core.app_settings import set_cached_email
+            set_cached_email(email)
+            
+            self.authorized_email = email
+            self.lbl_subtitle.setText(f"Signed in as {email}\nPlease enter your Access Code.")
+            self.lbl_subtitle.setStyleSheet("color: #2c3e50; font-size: 12px;")
+            self.stack.setCurrentIndex(1)
+            self.txt_access_code.setFocus()
+        else:
+            QMessageBox.critical(self, "Access Blocked", f"The account '{email}' is no longer registered or authorized in the system.")
+            self.remove_recent_account_from_list(email)
+
+    def remove_recent_account_from_list(self, email):
+        from core.app_settings import remove_recent_email
+        remove_recent_email(email)
+        self.update_recent_accounts_list()
+        
+        # If no more recent accounts remain, redirect to standard Google SSO page
+        from core.app_settings import get_recent_emails
+        if not get_recent_emails():
+            self.show_google_sign_in_page()
 
     def attempt_login(self):
         code = self.txt_access_code.text().strip()
