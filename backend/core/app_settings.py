@@ -84,10 +84,29 @@ def get_cached_email() -> str | None:
 def set_cached_email(email: str):
     d = _load()
     d['cached_email'] = email
+    
+    # Auto-add to recent list
+    recent = d.get('recent_emails', [])
+    if email not in recent:
+        recent.append(email)
+    d['recent_emails'] = recent
     _save(d)
 
 def clear_cached_email():
     d = _load()
     if 'cached_email' in d:
         del d['cached_email']
+    _save(d)
+
+def get_recent_emails() -> list:
+    return _load().get('recent_emails', [])
+
+def remove_recent_email(email: str):
+    d = _load()
+    recent = d.get('recent_emails', [])
+    if email in recent:
+        recent.remove(email)
+    d['recent_emails'] = recent
+    if d.get('cached_email') == email:
+        d['cached_email'] = None
     _save(d)

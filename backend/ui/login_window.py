@@ -178,7 +178,7 @@ class BuiltInSSOBrowser(QDialog):
         self.lbl_success_subtitle.setStyleSheet("color: #7f8c8d;")
         self.lbl_success_subtitle.setAlignment(Qt.AlignCenter)
         
-        self.lbl_timer_msg = QLabel("Closing window in 3 seconds...")
+        self.lbl_timer_msg = QLabel("Closing window in 5 seconds...")
         self.lbl_timer_msg.setFont(QFont("Inter", 11, QFont.Bold))
         self.lbl_timer_msg.setStyleSheet("color: #2980b9; margin-top: 15px;")
         self.lbl_timer_msg.setAlignment(Qt.AlignCenter)
