@@ -123,14 +123,18 @@ class BuiltInSSOBrowser(QDialog):
         self.setWindowTitle("Google Sign-In")
         self.resize(600, 700)
         
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        # Use QStackedWidget to transition from browser to success screen
+        self.stack = QStackedWidget(self)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(self.stack)
         
+        # Page 0: Browser View
         from PySide6.QtWebEngineWidgets import QWebEngineView
         from PySide6.QtCore import QUrl
         
         self.web_view = QWebEngineView(self)
-        layout.addWidget(self.web_view)
+        self.stack.addWidget(self.web_view)
         
         # Override User-Agent to standard desktop Chrome to bypass Google's embedded browser block
         profile = self.web_view.page().profile()
@@ -140,6 +144,76 @@ class BuiltInSSOBrowser(QDialog):
         )
         
         self.web_view.setUrl(QUrl(url))
+        
+        # Page 1: Success Screen View
+        self.success_widget = QWidget(self)
+        self.success_widget.setStyleSheet("background-color: #ffffff;")
+        
+        success_layout = QVBoxLayout(self.success_widget)
+        success_layout.setAlignment(Qt.AlignCenter)
+        success_layout.setSpacing(20)
+        
+        # Green checkmark circle with premium modern styling
+        self.lbl_check = QLabel()
+        self.lbl_check.setFixedSize(80, 80)
+        self.lbl_check.setAlignment(Qt.AlignCenter)
+        self.lbl_check.setStyleSheet("""
+            QLabel {
+                background-color: #2ecc71;
+                color: white;
+                font-size: 40px;
+                font-weight: bold;
+                border-radius: 40px;
+            }
+        """)
+        self.lbl_check.setText("✓")
+        
+        self.lbl_success_title = QLabel("Authentication Successful!")
+        self.lbl_success_title.setFont(QFont("Inter", 20, QFont.Bold))
+        self.lbl_success_title.setStyleSheet("color: #2c3e50;")
+        self.lbl_success_title.setAlignment(Qt.AlignCenter)
+        
+        self.lbl_success_subtitle = QLabel("Welcome to HAPAG Form 5A Comparator")
+        self.lbl_success_subtitle.setFont(QFont("Inter", 12))
+        self.lbl_success_subtitle.setStyleSheet("color: #7f8c8d;")
+        self.lbl_success_subtitle.setAlignment(Qt.AlignCenter)
+        
+        self.lbl_timer_msg = QLabel("Closing window in 3 seconds...")
+        self.lbl_timer_msg.setFont(QFont("Inter", 11, QFont.Bold))
+        self.lbl_timer_msg.setStyleSheet("color: #2980b9; margin-top: 15px;")
+        self.lbl_timer_msg.setAlignment(Qt.AlignCenter)
+        
+        success_layout.addWidget(self.lbl_check)
+        success_layout.addWidget(self.lbl_success_title)
+        success_layout.addWidget(self.lbl_success_subtitle)
+        success_layout.addWidget(self.lbl_timer_msg)
+        
+        self.stack.addWidget(self.success_widget)
+        
+        # Timer tracking
+        self.countdown = 3
+        self.on_close_callback = None
+        self.timer = None
+
+    def show_success_screen(self, email, callback):
+        self.on_close_callback = callback
+        self.lbl_success_subtitle.setText(f"Signed in as {email}\nWelcome to HAPAG Form 5A Comparator")
+        self.stack.setCurrentIndex(1)
+        
+        # Start countdown timer
+        from PySide6.QtCore import QTimer
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.tick_countdown)
+        self.timer.start(1000)
+
+    def tick_countdown(self):
+        self.countdown -= 1
+        if self.countdown <= 0:
+            self.timer.stop()
+            if self.on_close_callback:
+                self.on_close_callback()
+        else:
+            self.lbl_timer_msg.setText(f"Closing window in {self.countdown} seconds...")
 
 
 class LoginWindow(QWidget):
@@ -305,14 +379,30 @@ class LoginWindow(QWidget):
                 
         log_ui(f"on_google_auth_finished called. email: {email}, error_msg: {error_msg}")
         
-        # Close the built-in SSO browser if it's still open
+        # Close immediately on error, or show a 3-second countdown on successful login
         if hasattr(self, 'sso_browser') and self.sso_browser:
-            try:
-                self.sso_browser.blockSignals(True)
-                self.sso_browser.close()
-            except:
-                pass
-            self.sso_browser = None
+            if not error_msg and email:
+                # Disconnect standard finished signal to prevent trigger overlap
+                try:
+                    self.sso_browser.finished.disconnect(self.on_sso_browser_finished)
+                except:
+                    pass
+                
+                browser_ref = self.sso_browser
+                def close_and_cleanup():
+                    try:
+                        browser_ref.close()
+                    except:
+                        pass
+                browser_ref.show_success_screen(email, close_and_cleanup)
+                self.sso_browser = None
+            else:
+                try:
+                    self.sso_browser.blockSignals(True)
+                    self.sso_browser.close()
+                except:
+                    pass
+                self.sso_browser = None
         
         if error_msg:
             log_ui("Google Sign-In failed with error_msg")
