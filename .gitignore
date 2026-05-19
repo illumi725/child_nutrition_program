@@ -18,3 +18,7 @@ global_stats_cache.json
 HAPAG APPROVED BASELINE/
 
 *.code-workspace
+
+# PyInstaller binary output
+backend/_internal/
+backend/hapag_comparator

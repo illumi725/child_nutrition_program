@@ -140,6 +140,7 @@ class SearchBeneficiaryWindow(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setAlternatingRowColors(True)
         self.table.setStyleSheet("""
             QTableWidget { border: 1px solid #ecf0f1; font-size: 13px; }

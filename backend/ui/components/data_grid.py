@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QWidget, QHBoxLayout, QPushButton
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QWidget, QHBoxLayout, QPushButton, QAbstractItemView
 from PySide6.QtCore import Qt, Signal
 
 class ActionWidget(QWidget):
@@ -157,10 +157,31 @@ class ResultsDataGrid(QTableWidget):
     def __init__(self):
         super().__init__()
         self.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.setSelectionBehavior(QTableWidget.SelectRows)
+        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.verticalHeader().setVisible(False)
         self.setAlternatingRowColors(True)
         self.horizontalHeader().setStretchLastSection(True)
+        self.setStyleSheet("""
+            QTableWidget {
+                border: 1px solid #ecf0f1;
+                font-size: 12px;
+                background-color: white;
+                color: #2c3e50;
+                alternate-background-color: #f8f9fa;
+            }
+            QHeaderView::section {
+                background-color: #2c3e50;
+                color: white;
+                padding: 6px;
+                font-weight: bold;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #d6eaf8;
+                color: #2c3e50;
+            }
+        """)
 
     def set_data(self, results_list, columns, action_label=None):
         self.clear()

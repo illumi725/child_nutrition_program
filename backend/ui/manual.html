@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAPAG Form 5A Comparator - User's Manual</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --hover-color: #2563eb;
+            --green: #10b981;
+            --orange: #f59e0b;
+            --red: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 280px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-gradient);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .logo-text {
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-color);
+        }
+
+        .nav-link.active {
+            color: white;
+            background: var(--accent-gradient);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        /* ── Content Area ── */
+        .content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 48px 64px;
+            scroll-behavior: smooth;
+        }
+
+        .section {
+            margin-bottom: 64px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 40px 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ffffff;
+            border-left: 4px solid var(--accent-color);
+            padding-left: 12px;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 24px 0 12px;
+            color: var(--text-color);
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 16px;
+            line-height: 1.7;
+        }
+
+        /* ── Glass Cards ── */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        /* ── Features List ── */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .feature-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* ── Tables ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: white;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            color: var(--text-muted);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ── Badges & Alerts ── */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+        .badge-orange { background: rgba(245, 158, 11, 0.15); color: var(--orange); }
+        .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+        .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-color); }
+
+        .alert {
+            border-left: 4px solid var(--accent-color);
+            background: rgba(59, 130, 246, 0.05);
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .alert-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .alert-warning {
+            border-left-color: var(--orange);
+            background: rgba(245, 158, 11, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── Sidebar Navigation ── -->
+    <div class="sidebar">
+        <div class="logo-area">
+            <div class="logo-icon">H</div>
+            <div class="logo-text">HAPAG Form 5A<br><span style="font-size: 11px; color: var(--text-muted)">Comparator</span></div>
+        </div>
+        <div class="nav-links">
+            <a href="#overview" class="nav-link active" onclick="activateLink(this)">📖 Overview</a>
+            <a href="#authentication" class="nav-link" onclick="activateLink(this)">🔐 Security & Auth</a>
+            <a href="#scanning" class="nav-link" onclick="activateLink(this)">📂 Scanner & Registry</a>
+            <a href="#resolving" class="nav-link" onclick="activateLink(this)">🔄 Conflict Resolver</a>
+            <a href="#duplicates" class="nav-link" onclick="activateLink(this)">👥 Duplicate Manager</a>
+            <a href="#sync-mode" class="nav-link" onclick="activateLink(this)">⚙ Cloud & Offline Sync</a>
+            <a href="#dashboard" class="nav-link" onclick="activateLink(this)">📊 Stats & Search</a>
+        </div>
+    </div>
+
+    <!-- ── Content Area ── -->
+    <div class="content" id="content-container">
+
+        <!-- SECTION: Overview -->
+        <section id="overview" class="section">
+            <h1>HAPAG Form 5A Comparator</h1>
+            <p class="subtitle">An advanced dual-mode desktop environment designed to synchronize, optimize, and parse local nutritional data registries with a secure production backend.</p>
+            
+            <div class="card">
+                <h2>System Overview</h2>
+                <p>The <strong>HAPAG Form 5A Comparator</strong> is built specifically for ASA Philippines Foundation, Inc. to streamline baseline monitoring and child nutrition programs. By comparing raw Excel spreadsheets directly against an active central database, the application bridges the gap between field updates and cloud records.</p>
+                <div class="alert">
+                    <div class="alert-title">Dual Connection Architecture</div>
+                    <div class="alert-desc">Works seamlessly in high-speed environment setups (Cloud Realtime) and remote field operations (Local Offline SQLite Snapshot) with automatic synchronization capability.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Key Components</h2>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">🛡️</div>
+                        <div class="feature-title">Secure Authentication</div>
+                        <div class="feature-desc">Integrated Google OAuth Single Sign-On paired with server-verified individual role credentials.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📂</div>
+                        <div class="feature-title">Anthro metrics Engine</div>
+                        <div class="feature-desc">WHO-compliant clinical formulas for computing Height/Weight-for-Age, WFH, and BMI statuses automatically.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">⚡</div>
+                        <div class="feature-title">Conflict Resolver</div>
+                        <div class="feature-desc">Bi-directional name, birthday, and baseline correction grids allowing bulk updating.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🔄</div>
+                        <div class="feature-title">Delta Synchronization</div>
+                        <div class="feature-desc">State-of-the-art background worker logic that tracks local mutations and reconciles changes incrementally.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Authentication -->
+        <section id="authentication" class="section">
+            <h1>Security & Authentication</h1>
+            <p class="subtitle">Access control mechanisms protecting clinical records and user privileges.</p>
+
+            <div class="card">
+                <h2>Google Single Sign-On (SSO)</h2>
+                <p>The system leverages a secure, modern Google OAuth dialog window. Users can sign in using their registered organization Google account. Authentication status is visually confirmed via a successful browser landing page with a closing countdown helper.</p>
+                <p>Once authenticated, the Google email is cross-checked against authorized user profiles. If found, session caches store the address to expedite future desktop launches.</p>
+            </div>
+
+            <div class="card">
+                <h2>Access Verification</h2>
+                <p>After a successful Google SSO handshake, the user must input their unique role-based <strong>Access Code</strong>:</p>
+                <ul>
+                    <li>The access code is parsed and matched with database user profiles.</li>
+                    <li>Accounts carry granular permissions (e.g. Administrator, Standard User).</li>
+                    <li><strong>Security Lockout:</strong> Entering the incorrect access code 5 consecutive times automatically locks the terminal and shuts down the application safely.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- SECTION: Scanning -->
+        <section id="scanning" class="section">
+            <h1>Directory Scanning & Index Rebuilds</h1>
+            <p class="subtitle">Parsing local files and identifying record matches in real time.</p>
+
+            <div class="card">
+                <h2>File Explorer Scanner</h2>
+                <p>The left panel provides a quick directory browser to locate regional/site Excel spreadsheets. Selecting folders populates target files for comparison.</p>
+                <p>Clicking <strong>Scan Selected Files</strong> starts a comprehensive background parsing job using <code>ScanWorker</code>. The engine extracts beneficiary listings, baseline metrics, weight, height, and collection milestones.</p>
+            </div>
+
+            <div class="card">
+                <h2>Inter-file Duplicate Index</h2>
+                <p>To accelerate scans and prevent inter-file duplication, the scanner creates a locally cached index file (<code>interfile_index_cache.json</code>) tracking mapped rows across documents.</p>
+                <div class="alert alert-warning">
+                    <div class="alert-title">Rebuilding Index</div>
+                    <div class="alert-desc">If spreadsheets are modified or renamed externally, click the <strong>Rebuild Inter-file Index</strong> button. This clears the cache and constructs a clean comparison index.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Resolving -->
+        <section id="resolving" class="section">
+            <h1>Interactive Conflict Resolver</h1>
+            <p class="subtitle">Detailed breakdown of the comparison discrepancy tabs.</p>
+
+            <div class="card">
+                <h2>Matching and Correction Grids</h2>
+                <p>The main screen classifies findings into eight specialized, tabbed results views. Each grid lists conflicting data side-by-side with clear action controls.</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Grid Tab</th>
+                            <th>Description</th>
+                            <th>Resolving Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-green">Exact Matches</span></td>
+                            <td>All demographics are identical, but baseline height/weight has newer updates in the Excel sheet.</td>
+                            <td>Click <strong>Sync</strong> to update the database immediately, or use <strong>Bulk Sync All</strong>.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-blue">High Confidence</span></td>
+                            <td>Name similarity scores indicate highly likely matches with minor database variations.</td>
+                            <td>Review and match baseline entries to align records.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-orange">Birthday Discrepancies</span></td>
+                            <td>Identical names mapped but birthdays disagree (e.g., typos in input fields).</td>
+                            <td>Choose <strong>Use Excel</strong>, <strong>Use DB</strong>, or input a <strong>Manual Date</strong> to correct both files.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-orange">Name Discrepancies</span></td>
+                            <td>Birthdays and baselines match, but name spelling differs (e.g., misplaced middle names).</td>
+                            <td>Select <strong>Use Excel</strong> to update the DB, <strong>Use DB</strong> to update Excel, or type manually.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-red">Review Required</span></td>
+                            <td>Significant parameter differences require manual human confirmation.</td>
+                            <td>Double-check original papers before synchronizing.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-blue">Missing in DB</span></td>
+                            <td>Beneficiaries found in the Excel sheet who do not exist in the database.</td>
+                            <td>Click <strong>Add to DB</strong> to open the registration dialog and record the child.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION: Duplicates -->
+        <section id="duplicates" class="section">
+            <h1>Database Duplicate Beneficiary Manager</h1>
+            <p class="subtitle">Resolving multiple database records to maintain index integrity.</p>
+
+            <div class="card">
+                <h2>DB Duplicate Records</h2>
+                <p>When multiple records are detected with overlapping identifiers or identical names, standard queries are hindered, and metrics can split across entries.</p>
+                <p>The system opens the <strong>Manage DB Duplicate Beneficiaries</strong> dashboard, which pulls diagnostic statistics (e.g., Feeding schedules, Baseline metrics, Height/Weight records, Absences) for each copy from the database.</p>
+            </div>
+
+            <div class="card">
+                <h2>Select Column Checkboxes</h2>
+                <p>The left-most column contains <strong>Select Checkboxes</strong>. Clicking a row or checking its box selects that record, highlighting its details in red on the action bar.</p>
+                <ul>
+                    <li><strong>Keeper Highlighting:</strong> The row containing the most recorded feeding days or baseline details is automatically highlighted in <span style="color: var(--green); font-weight: bold;">Green</span> as the recommended record to preserve.</li>
+                    <li><strong>Cascade Hard Delete:</strong> Clicking <strong>Delete Selected Record</strong> prompts a warning confirmation, listing all child rows that will be safely deleted. It then deletes that duplicate and syncs child records to the survivor.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- SECTION: Sync Mode -->
+        <section id="sync-mode" class="section">
+            <h1>Cloud & Offline Synchronization</h1>
+            <p class="subtitle">Configuring local operations and server delta uploads.</p>
+
+            <div class="card">
+                <h2>Database Mode Settings</h2>
+                <p>Accessible from the settings menu:
+                    <ul>
+                        <li><strong>Cloud Mode:</strong> Realtime, direct MySQL production link. Requires persistent internet.</li>
+                        <li><strong>Local Mode:</strong> Runs on a local SQLite file stored in AppData. Ideal for offline work.</li>
+                    </ul>
+                </p>
+                <div class="alert alert-warning">
+                    <div class="alert-title">Mode Swap Restarts</div>
+                    <div class="alert-desc">Switching database modes automatically restarts the application to securely rebuild connections and clear memory footprints.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Local Sync Options</h2>
+                <p>Under Local Mode, sync controls include:
+                    <ul>
+                        <li><strong>Full Replication:</strong> Executed during first-time setup or database reset. It completely recreates SQLite tables from live MySQL schemas, establishes optimized database indexes, and pulls all cloud data.</li>
+                        <li><strong>Delta Sync Now:</strong> Performs bidirectional delta updates. It pushes local modifications (based on <code>updated_at</code> timestamps) via MySQL <code>ON DUPLICATE KEY UPDATE</code>, and pulls cloud records.</li>
+                        <li><strong>Auto-Sync Timer:</strong> Enables background delta synchronization at user-configured minute intervals.</li>
+                    </ul>
+                </p>
+            </div>
+        </section>
+
+        <!-- SECTION: Dashboard -->
+        <section id="dashboard" class="section">
+            <h1>System Dashboard & Global Search</h1>
+            <p class="subtitle">Quick statistics, analytics representation, and records indexing.</p>
+
+            <div class="card">
+                <h2>System Dashboard</h2>
+                <p>Accessed via the header's <strong>📊 System Dashboard</strong> button, this utility computes real-time statistics:</p>
+                <ul>
+                    <li>Total database and regional sites count.</li>
+                    <li>Offline snapshot integrity status.</li>
+                    <li>Active synchronization indicators.</li>
+                    <li>Detailed feeding logs charts and progress summaries.</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>Global Beneficiary Search</h2>
+                <p>The <strong>🔍 Search Beneficiary</strong> tool performs case-insensitive wildcard searches of the local database by First Name and Last Name.</p>
+                <p>It instantly retrieves registered demographics, including birthdates, site names, and exact counts of related baseline parameters (Feedings, Absences, Height/Weight histories). If duplicate profiles are detected under that name, it displays a button to open the <strong>DB Duplicate Beneficiary Manager</strong>.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ── Interactive JavaScript ── -->
+    <script>
+        function activateLink(clickedLink) {
+            // Remove active class from all links
+            const links = document.querySelectorAll('.nav-link');
+            links.forEach(link => link.classList.remove('active'));
+            
+            // Add active class to clicked link
+            clickedLink.classList.add('active');
+        }
+
+        // Smooth scroll spy to auto-active nav links on scroll
+        const container = document.getElementById('content-container');
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        container.onscroll = () => {
+            let current = "";
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (container.scrollTop >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        };
+    </script>
+</body>
+</html>

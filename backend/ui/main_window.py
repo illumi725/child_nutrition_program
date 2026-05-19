@@ -153,6 +153,31 @@ rm -- "$0"
         sys.exit(0)
 
 
+class UserManualBrowser(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("HAPAG Form 5A Comparator - User's Manual")
+        self.resize(1000, 750)
+        self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        from PySide6.QtWebEngineWidgets import QWebEngineView
+        from PySide6.QtCore import QUrl
+        
+        self.web_view = QWebEngineView(self)
+        layout.addWidget(self.web_view)
+        
+        import os
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        manual_path = os.path.join(base_dir, "manual.html")
+        if os.path.exists(manual_path):
+            self.web_view.setUrl(QUrl.fromLocalFile(manual_path))
+        else:
+            self.web_view.setHtml("<h3>User Manual file not found.</h3>")
+
+
 class MainWindow(QMainWindow):
     def __init__(self, current_user=None):
         super().__init__()
@@ -228,6 +253,10 @@ class MainWindow(QMainWindow):
         self.btn_about.setStyleSheet("background-color: #34495e; color: white; font-weight: bold; padding: 5px;")
         self.btn_about.clicked.connect(self.open_about)
         
+        self.btn_manual = QPushButton("📖 User Manual")
+        self.btn_manual.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 5px;")
+        self.btn_manual.clicked.connect(self.open_user_manual)
+        
         self.btn_dashboard = QPushButton("📊 System Dashboard")
         self.btn_dashboard.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
         self.btn_dashboard.clicked.connect(self.open_dashboard)
@@ -241,6 +270,7 @@ class MainWindow(QMainWindow):
         right_header_layout.addWidget(self.btn_dashboard)
         right_header_layout.addWidget(self.btn_settings)
         right_header_layout.addWidget(self.btn_about)
+        right_header_layout.addWidget(self.btn_manual)
         
         right_layout.addLayout(right_header_layout)
 
@@ -848,6 +878,10 @@ class MainWindow(QMainWindow):
             "About HAPAG Form 5A Comparator",
             about_text
         )
+
+    def open_user_manual(self):
+        dlg = UserManualBrowser(self)
+        dlg.exec()
 
     def _update_window_title(self, user_display: str):
         from core.app_settings import get_mode

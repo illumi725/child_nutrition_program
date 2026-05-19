@@ -37,6 +37,9 @@ def _get_local_connection():
         )
     conn = sqlite3.connect(path)
     
+    # Register NOW function for MySQL compatibility
+    conn.create_function("NOW", 0, lambda: datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    
     # SQLite dict factory
     def dict_factory(cursor, row):
         d = {}

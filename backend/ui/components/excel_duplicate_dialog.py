@@ -91,9 +91,17 @@ class ExcelDuplicateDialog(QDialog):
         header.setSectionResizeMode(6, QHeaderView.Stretch)  # Let File column take remaining space
 
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setAlternatingRowColors(True)
         self.table.setStyleSheet("""
-            QTableWidget { border: 1px solid #ecf0f1; font-size: 12px; }
+            QTableWidget {
+                border: 1px solid #ecf0f1;
+                font-size: 12px;
+                background-color: white;
+                color: #2c3e50;
+                alternate-background-color: #f8f9fa;
+            }
             QHeaderView::section {
                 background-color: #2c3e50; color: white;
                 padding: 6px; font-weight: bold; border: none;

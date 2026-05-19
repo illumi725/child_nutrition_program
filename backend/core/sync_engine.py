@@ -30,6 +30,7 @@ def _get_local_conn():
     from core.app_settings import get_local_db_path
     path = get_local_db_path()
     conn = sqlite3.connect(path)
+    conn.create_function("NOW", 0, lambda: datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=OFF")

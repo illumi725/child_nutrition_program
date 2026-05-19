@@ -36,9 +36,16 @@ class RecordListDialog(QDialog):
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        table.setSelectionMode(QAbstractItemView.SingleSelection)
         table.setAlternatingRowColors(True)
         table.setStyleSheet("""
-            QTableWidget { border: 1px solid #ecf0f1; font-size: 13px; }
+            QTableWidget {
+                border: 1px solid #ecf0f1;
+                font-size: 13px;
+                background-color: white;
+                color: #2c3e50;
+                alternate-background-color: #f8f9fa;
+            }
             QHeaderView::section {
                 background-color: #2c3e50; color: white;
                 padding: 6px; font-weight: bold; border: none;
@@ -169,14 +176,21 @@ class DupGroupPickerDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setAlternatingRowColors(True)
         self.table.setStyleSheet("""
-            QTableWidget { border: 1px solid #ecf0f1; font-size: 12px; }
+            QTableWidget {
+                border: 1px solid #ecf0f1;
+                font-size: 12px;
+                background-color: white;
+                color: #2c3e50;
+                alternate-background-color: #f8f9fa;
+            }
             QHeaderView::section {
                 background-color: #2c3e50; color: white;
                 padding: 6px; font-weight: bold; border: none;
             }
-            QTableWidget::item:selected { background-color: #fadbd8; }
+            QTableWidget::item:selected { background-color: #fadbd8; color: #2c3e50; }
         """)
         self.table.setRowCount(len(dup_groups))
         for i, group in enumerate(dup_groups):
