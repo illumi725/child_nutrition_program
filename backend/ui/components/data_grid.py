@@ -134,6 +134,33 @@ class MissingDbActionWidget(QWidget):
         lbl.setStyleSheet("color: #27ae60; font-weight: bold; background: transparent; border: none;")
         self.layout().addWidget(lbl)
 
+class MissingExcelActionWidget(QWidget):
+    action_clicked = Signal(str, dict, QWidget)
+    
+    def __init__(self, record_data):
+        super().__init__()
+        self.record_data = record_data
+        
+        layout = QHBoxLayout()
+        layout.setContentsMargins(2, 2, 2, 2)
+        self.setLayout(layout)
+        
+        self.btn_delete = QPushButton("Delete from DB")
+        self.btn_delete.setStyleSheet("background-color: #e74c3c; color: white;")
+        self.btn_delete.clicked.connect(lambda: self.action_clicked.emit("delete_from_db", self.record_data, self))
+        
+        layout.addWidget(self.btn_delete)
+        
+        if record_data.get('_deleted_from_db', False):
+            self.mark_as_resolved()
+
+    def mark_as_resolved(self):
+        self.btn_delete.setVisible(False)
+        lbl = QPushButton("Deleted ✓")
+        lbl.setEnabled(False)
+        lbl.setStyleSheet("color: #27ae60; font-weight: bold; background: transparent; border: none;")
+        self.layout().addWidget(lbl)
+
 class ManageDupWidget(QWidget):
     """Action widget for the Excel/DB Duplicates tab — shows a red Manage button."""
     action_clicked = Signal(str, dict, QWidget)
@@ -160,6 +187,8 @@ class ResultsDataGrid(QTableWidget):
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.verticalHeader().setVisible(False)
+        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.setWordWrap(True)
         self.setAlternatingRowColors(True)
         self.horizontalHeader().setStretchLastSection(True)
         self.setStyleSheet("""
@@ -206,6 +235,9 @@ class ResultsDataGrid(QTableWidget):
                     action_widget.action_clicked.connect(lambda action, rec, aw: self.action_triggered.emit(action, rec, aw))
                 elif action_label == "MissingDbActions":
                     action_widget = MissingDbActionWidget(record)
+                    action_widget.action_clicked.connect(lambda action, rec, aw: self.action_triggered.emit(action, rec, aw))
+                elif action_label == "MissingExcelActions":
+                    action_widget = MissingExcelActionWidget(record)
                     action_widget.action_clicked.connect(lambda action, rec, aw: self.action_triggered.emit(action, rec, aw))
                 elif action_label == "ManageDup":
                     action_widget = ManageDupWidget(record)

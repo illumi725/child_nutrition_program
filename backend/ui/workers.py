@@ -327,7 +327,8 @@ class ScanWorker(QThread):
                 "potential_matches": potential_dupes,
                 "excel_duplicates": excel_duplicates,
                 "missing_in_db": missing_in_db, 
-                "missing_in_excel": missing_in_excel[:500]  # Cap at 500 to prevent UI lag if massive
+                "missing_in_excel": missing_in_excel[:500],  # Cap at 500 to prevent UI lag if massive
+                "db_records": db_records
             })
         except Exception as e:
             self.error.emit(str(e))

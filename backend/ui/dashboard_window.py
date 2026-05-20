@@ -17,7 +17,7 @@ class RecordListDialog(QDialog):
     def __init__(self, title, records, columns, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.resize(860, 500)
+        self.resize(750, 450)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
 
         screen = self.screen().availableGeometry()
@@ -27,13 +27,18 @@ class RecordListDialog(QDialog):
         layout = QVBoxLayout(self)
 
         lbl = QLabel(f"{title}  —  {len(records)} record(s)")
-        lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 4px;")
+        lbl.setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 4px;")
+        lbl.setWordWrap(True)
         layout.addWidget(lbl)
 
         table = QTableWidget()
         table.setColumnCount(len(columns))
         table.setHorizontalHeaderLabels([c["label"] for c in columns])
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        table.setWordWrap(False)
+        table.verticalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        table.verticalHeader().setDefaultSectionSize(28)
+        table.verticalHeader().setVisible(False)
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectRows)
         table.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -42,15 +47,10 @@ class RecordListDialog(QDialog):
             QTableWidget {
                 border: 1px solid #ecf0f1;
                 font-size: 13px;
-                background-color: white;
-                color: #2c3e50;
-                alternate-background-color: #f8f9fa;
             }
             QHeaderView::section {
-                background-color: #2c3e50; color: white;
                 padding: 6px; font-weight: bold; border: none;
             }
-            QTableWidget::item:selected { background-color: #d6eaf8; color: #2c3e50; }
         """)
 
         table.setRowCount(len(records))
@@ -59,9 +59,15 @@ class RecordListDialog(QDialog):
                 getter = col.get("getter")
                 val = getter(rec) if getter else rec.get(col["key"], "")
                 item = QTableWidgetItem(str(val) if val is not None else "—")
-                item.setTextAlignment(Qt.AlignCenter)
+                key_lower = str(col.get("key", "")).lower()
+                label_lower = str(col.get("label", "")).lower()
+                if "name" in key_lower or "name" in label_lower or "file" in key_lower or "file" in label_lower:
+                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                else:
+                    item.setTextAlignment(Qt.AlignCenter)
                 table.setItem(row_i, col_i, item)
 
+        table.resizeColumnsToContents()
         layout.addWidget(table)
 
         btn_close = QPushButton("Close")
@@ -84,12 +90,10 @@ class StatCard(QFrame):
 
         self.setStyleSheet(f"""
             QFrame {{
-                background-color: white;
                 border: 2px solid {color};
                 border-radius: 8px;
             }}
             QFrame:hover {{
-                background-color: #f0f4ff;
                 border: 2.5px solid {color};
             }}
         """)
@@ -98,15 +102,15 @@ class StatCard(QFrame):
         layout = QVBoxLayout(self)
 
         lbl_title = QLabel(title)
-        lbl_title.setStyleSheet("color: #7f8c8d; font-size: 13px; font-weight: bold; border: none;")
+        lbl_title.setStyleSheet("font-size: 13px; font-weight: bold; border: none;")
         lbl_title.setAlignment(Qt.AlignCenter)
 
         self.lbl_value = QLabel("-")
-        self.lbl_value.setStyleSheet(f"color: {color}; font-size: 32px; font-weight: bold; border: none;")
+        self.lbl_value.setStyleSheet(f"font-size: 32px; font-weight: bold; border: none;")
         self.lbl_value.setAlignment(Qt.AlignCenter)
 
         self.lbl_hint = QLabel("Click to view list")
-        self.lbl_hint.setStyleSheet("color: #bdc3c7; font-size: 10px; border: none;")
+        self.lbl_hint.setStyleSheet("font-size: 10px; border: none;")
         self.lbl_hint.setAlignment(Qt.AlignCenter)
 
         layout.addWidget(lbl_title)
@@ -167,13 +171,18 @@ class DupGroupPickerDialog(QDialog):
         layout = QVBoxLayout(self)
 
         lbl = QLabel(f"Found {len(dup_groups)} duplicate name group(s). Double-click a group to manage it.")
-        lbl.setStyleSheet("font-size: 13px; font-weight: bold; color: #c0392b; margin-bottom: 4px;")
+        lbl.setStyleSheet("font-size: 13px; font-weight: bold; margin-bottom: 4px;")
+        lbl.setWordWrap(True)
         layout.addWidget(lbl)
 
         self.table = QTableWidget()
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(["Name", "Count", "IDs", "Sites"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table.setWordWrap(False)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.table.verticalHeader().setDefaultSectionSize(28)
+        self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -182,15 +191,10 @@ class DupGroupPickerDialog(QDialog):
             QTableWidget {
                 border: 1px solid #ecf0f1;
                 font-size: 12px;
-                background-color: white;
-                color: #2c3e50;
-                alternate-background-color: #f8f9fa;
             }
             QHeaderView::section {
-                background-color: #2c3e50; color: white;
                 padding: 6px; font-weight: bold; border: none;
             }
-            QTableWidget::item:selected { background-color: #fadbd8; color: #2c3e50; }
         """)
         self.table.setRowCount(len(dup_groups))
         for i, group in enumerate(dup_groups):
@@ -200,9 +204,13 @@ class DupGroupPickerDialog(QDialog):
             sites = ", ".join(set(str(r.get('site_name', '—')) for r in group))
             for col, val in enumerate([name, str(len(group)), ids, sites]):
                 item = QTableWidgetItem(val)
-                item.setTextAlignment(Qt.AlignCenter)
+                if col == 0:  # Name column
+                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                else:
+                    item.setTextAlignment(Qt.AlignCenter)
                 self.table.setItem(i, col, item)
 
+        self.table.resizeColumnsToContents()
         self.table.doubleClicked.connect(self._on_double_click)
         layout.addWidget(self.table)
 
@@ -263,13 +271,13 @@ class DashboardWindow(QDialog):
         layout = QVBoxLayout(self)
 
         header = QLabel("Global System Diagnostics")
-        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #2c3e50;")
+        header.setStyleSheet("font-size: 20px; font-weight: bold;")
         header.setAlignment(Qt.AlignCenter)
         layout.addWidget(header)
 
         self.lbl_status = QLabel(f"Loading…")
         self.lbl_status.setAlignment(Qt.AlignCenter)
-        self.lbl_status.setStyleSheet("color: #7f8c8d; font-size: 11px;")
+        self.lbl_status.setStyleSheet("font-size: 11px;")
         layout.addWidget(self.lbl_status)
 
         self.progress = QProgressBar()
@@ -300,11 +308,8 @@ class DashboardWindow(QDialog):
         self.btn_refresh = QPushButton("🔄  Refresh Stats")
         self.btn_refresh.setStyleSheet("""
             QPushButton {
-                background-color: #2980b9; color: white;
                 font-weight: bold; padding: 7px; border-radius: 5px;
             }
-            QPushButton:hover { background-color: #3498db; }
-            QPushButton:disabled { background-color: #95a5a6; }
         """)
         self.btn_refresh.clicked.connect(self.start_worker)
 

@@ -37,7 +37,8 @@ class EditBeneficiaryDialog(QDialog):
         
         self.cmb_site = QComboBox()
         for s in self.sites:
-            self.cmb_site.addItem(f"{s['site_name']} ({s['barangay_name']})", userData=s['site_id'])
+            batch_str = f" - Batch {s['batch']}" if s.get('batch') else ""
+            self.cmb_site.addItem(f"{s['site_name']} ({s['barangay_name']}){batch_str}", userData=s['site_id'])
             
         form_layout.addRow("Last Name:", self.txt_lastname)
         form_layout.addRow("First Name:", self.txt_firstname)
@@ -53,8 +54,8 @@ class EditBeneficiaryDialog(QDialog):
         
         # Buttons
         btn_layout = QHBoxLayout()
-        self.btn_save = QPushButton("Confirm & Register")
-        self.btn_save.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 5px;")
+        self.btn_save = QPushButton("Confirm and Register")
+
         self.btn_save.clicked.connect(self.accept)
         
         self.btn_cancel = QPushButton("Cancel")

@@ -246,32 +246,37 @@ class MainWindow(QMainWindow):
         
         right_header_layout = QHBoxLayout()
         self.btn_settings = QPushButton("⚙ Settings")
-        self.btn_settings.setStyleSheet("background-color: #555; color: white; font-weight: bold; padding: 5px;")
         self.btn_settings.clicked.connect(self.open_settings)
         
         self.btn_about = QPushButton("ℹ️ About")
-        self.btn_about.setStyleSheet("background-color: #34495e; color: white; font-weight: bold; padding: 5px;")
         self.btn_about.clicked.connect(self.open_about)
         
         self.btn_manual = QPushButton("📖 User Manual")
-        self.btn_manual.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 5px;")
         self.btn_manual.clicked.connect(self.open_user_manual)
         
-        self.btn_dashboard = QPushButton("📊 System Dashboard")
-        self.btn_dashboard.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
+        self.btn_dashboard = QPushButton("📊 Dashboard")
         self.btn_dashboard.clicked.connect(self.open_dashboard)
         
-        self.btn_search_beneficiary = QPushButton("🔍 Search Beneficiary")
-        self.btn_search_beneficiary.setStyleSheet("background-color: #16a085; color: white; font-weight: bold; padding: 5px;")
+        self.btn_search_beneficiary = QPushButton("🔍 Search")
         self.btn_search_beneficiary.clicked.connect(self.open_search)
         
+        self.btn_bulk_transfer = QPushButton("📦 Bulk Transfer")
+        self.btn_bulk_transfer.clicked.connect(self.open_bulk_transfer)
+        
+        from core.app_settings import get_theme
+        current_theme = get_theme()
+        btn_text = "☀️ Light" if current_theme == "dark" else "🌙 Dark"
+        self.btn_theme_toggle = QPushButton(btn_text)
+        self.btn_theme_toggle.clicked.connect(self.toggle_theme)
+        
         right_header_layout.addStretch()
+        right_header_layout.addWidget(self.btn_theme_toggle)
         right_header_layout.addWidget(self.btn_search_beneficiary)
+        right_header_layout.addWidget(self.btn_bulk_transfer)
         right_header_layout.addWidget(self.btn_dashboard)
+        right_header_layout.addWidget(self.btn_manual)
         right_header_layout.addWidget(self.btn_settings)
         right_header_layout.addWidget(self.btn_about)
-        right_header_layout.addWidget(self.btn_manual)
-        
         right_layout.addLayout(right_header_layout)
 
         self.tabs = QTabWidget()
@@ -293,6 +298,9 @@ class MainWindow(QMainWindow):
         
         self.grid_missing_excel = ResultsDataGrid()
         self.grid_excel_duplicates = ResultsDataGrid()
+        self.grid_db_duplicates = ResultsDataGrid()
+        self.grid_excel_duplicates.action_triggered.connect(self._on_excel_dup_action)
+        self.grid_db_duplicates.action_triggered.connect(self._on_db_dup_action)
         
         # Exact Matches Tab Widget with Bulk Sync Button
         self.exact_tab_widget = QWidget()
@@ -307,30 +315,37 @@ class MainWindow(QMainWindow):
         exact_layout.addWidget(self.btn_bulk_sync)
         exact_layout.addWidget(self.grid_exact)
 
-        self.tabs.addTab(self.exact_tab_widget, "Exact Matches (0)")
-        self.tabs.addTab(self.grid_fuzzy, "High Confidence (0)")
-        
-        # Birthday Discrepancies Tab Widget
-        self.bday_tab_widget = QWidget()
-        bday_layout = QVBoxLayout(self.bday_tab_widget)
-        bday_layout.setContentsMargins(0, 0, 0, 0)
-        
-        bday_btn_layout = QHBoxLayout()
-        self.btn_bday_bulk_excel = QPushButton("Bulk Correct (Use Excel)")
-        self.btn_bday_bulk_db = QPushButton("Bulk Correct (Use DB)")
-        self.btn_bday_bulk_excel.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 5px;")
-        self.btn_bday_bulk_db.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
-        
-        self.btn_bday_bulk_excel.clicked.connect(self.on_bulk_bday_use_excel)
-        self.btn_bday_bulk_db.clicked.connect(self.on_bulk_bday_use_db)
-        self.btn_bday_bulk_excel.setEnabled(False)
-        self.btn_bday_bulk_db.setEnabled(False)
-        
-        bday_btn_layout.addWidget(self.btn_bday_bulk_excel)
-        bday_btn_layout.addWidget(self.btn_bday_bulk_db)
-        
-        bday_layout.addLayout(bday_btn_layout)
-        bday_layout.addWidget(self.grid_bday)
+        self.tabs.addTab(self.exact_tab_widget, "Exact Matches (0)") # Index 0
+
+        # High Confidence Tab Widget with Bulk Sync Button
+        self.fuzzy_tab_widget = QWidget()
+        fuzzy_layout = QVBoxLayout(self.fuzzy_tab_widget)
+        fuzzy_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.btn_bulk_sync_fuzzy = QPushButton("⚡ Bulk Sync Baseline — High Confidence")
+        self.btn_bulk_sync_fuzzy.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bulk_sync_fuzzy.setEnabled(False)
+        self.btn_bulk_sync_fuzzy.clicked.connect(self.on_bulk_sync_fuzzy)
+
+        fuzzy_layout.addWidget(self.btn_bulk_sync_fuzzy)
+        fuzzy_layout.addWidget(self.grid_fuzzy)
+
+        self.tabs.addTab(self.fuzzy_tab_widget, "High Confidence (0)") # Index 1
+
+        # Review Required Tab Widget with Bulk Sync Button
+        self.potential_tab_widget = QWidget()
+        potential_layout = QVBoxLayout(self.potential_tab_widget)
+        potential_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.btn_bulk_sync_potential = QPushButton("⚡ Bulk Sync Baseline — Review Required")
+        self.btn_bulk_sync_potential.setStyleSheet("background-color: #c0392b; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bulk_sync_potential.setEnabled(False)
+        self.btn_bulk_sync_potential.clicked.connect(self.on_bulk_sync_potential)
+
+        potential_layout.addWidget(self.btn_bulk_sync_potential)
+        potential_layout.addWidget(self.grid_potential)
+
+        self.tabs.addTab(self.potential_tab_widget, "Review Required (0)") # Index 2
         
         # Name Discrepancies Tab Widget
         self.name_tab_widget = QWidget()
@@ -353,14 +368,37 @@ class MainWindow(QMainWindow):
         
         name_layout.addLayout(name_btn_layout)
         name_layout.addWidget(self.grid_name)
-        
-        self.tabs.addTab(self.bday_tab_widget, "Birthday Discrepancies (0)")
-        self.tabs.addTab(self.name_tab_widget, "Name Discrepancies (0)")
-        self.tabs.addTab(self.grid_potential, "Review Required (0)")
-        self.tabs.addTab(self.grid_missing_db, "Missing in DB (0)")
-        self.tabs.addTab(self.grid_missing_excel, "Missing in Excel (0)")
-        self.tabs.addTab(self.grid_excel_duplicates, "Excel Duplicates (0)")
 
+        self.tabs.addTab(self.name_tab_widget, "Name Discrepancies (0)") # Index 3
+
+        # Birthday Discrepancies Tab Widget
+        self.bday_tab_widget = QWidget()
+        bday_layout = QVBoxLayout(self.bday_tab_widget)
+        bday_layout.setContentsMargins(0, 0, 0, 0)
+        
+        bday_btn_layout = QHBoxLayout()
+        self.btn_bday_bulk_excel = QPushButton("Bulk Correct (Use Excel)")
+        self.btn_bday_bulk_db = QPushButton("Bulk Correct (Use DB)")
+        self.btn_bday_bulk_excel.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bday_bulk_db.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
+        
+        self.btn_bday_bulk_excel.clicked.connect(self.on_bulk_bday_use_excel)
+        self.btn_bday_bulk_db.clicked.connect(self.on_bulk_bday_use_db)
+        self.btn_bday_bulk_excel.setEnabled(False)
+        self.btn_bday_bulk_db.setEnabled(False)
+        
+        bday_btn_layout.addWidget(self.btn_bday_bulk_excel)
+        bday_btn_layout.addWidget(self.btn_bday_bulk_db)
+        
+        bday_layout.addLayout(bday_btn_layout)
+        bday_layout.addWidget(self.grid_bday)
+
+        self.tabs.addTab(self.bday_tab_widget, "Birthday Discrepancies (0)") # Index 4
+        
+        self.tabs.addTab(self.grid_missing_db, "Missing in DB (0)") # Index 5
+        self.tabs.addTab(self.grid_missing_excel, "Missing in Excel (0)") # Index 6
+        self.tabs.addTab(self.grid_excel_duplicates, "Excel Duplicates (0)") # Index 7
+        self.tabs.addTab(self.grid_db_duplicates, "DB Duplicates (0)") # Index 8
         right_layout.addWidget(self.tabs)
         
         # Progress Bar
@@ -440,6 +478,13 @@ class MainWindow(QMainWindow):
             {"label": "Excel Date", "key": "excel.date_collected", "getter": lambda r: format_display_date(r['excel'].get('date_collected'))},
             {"label": "DB Date", "key": "db.date_collected", "getter": lambda r: format_display_date(r['db'].get('date_collected'))},
             {"label": "Score", "key": "score"}
+        ]
+
+        self.db_duplicate_columns = [
+            {"label": "Name", "key": "name"},
+            {"label": "Duplicate Count", "key": "count"},
+            {"label": "Birthdays", "key": "birthdays"},
+            {"label": "Sites Registered", "key": "sites"}
         ]
 
         # Start auto-sync if Local mode is active
@@ -687,6 +732,74 @@ class MainWindow(QMainWindow):
         
         QMessageBox.information(self, "Bulk Sync Complete", f"Successfully synced {success_count} matches.\nFailed/Skipped: {fail_count}")
 
+    def _do_bulk_sync(self, match_list, btn, grid, label):
+        """Shared bulk sync logic for any match list."""
+        from core.database import sync_baseline
+        from PySide6.QtWidgets import QMessageBox
+
+        if not match_list:
+            return
+
+        success_count = 0
+        fail_count = 0
+
+        btn.setEnabled(False)
+        btn.setText("Syncing…")
+        QApplication.processEvents()
+
+        for record in match_list:
+            ex = record['excel']
+            db = record['db']
+
+            weight = ex.get('weight') or db.get('weight')
+            height = ex.get('height') or db.get('height')
+            date_collected = ex.get('date_collected') or db.get('date_collected')
+            birthday = ex.get('birthday') or db.get('birthday')
+
+            if weight and height:
+                success = sync_baseline(
+                    beneficiary_id=db['beneficiary_id'],
+                    weight=weight,
+                    height=height,
+                    date_collected=date_collected,
+                    birthday=birthday
+                )
+                if success:
+                    record['baseline_mismatch'] = False
+                    success_count += 1
+                else:
+                    fail_count += 1
+            else:
+                fail_count += 1
+
+        btn.setEnabled(True)
+        btn.setText(label)
+
+        grid.set_data(match_list, self.match_columns, action_label="Sync")
+
+        QMessageBox.information(
+            self, "Bulk Sync Complete",
+            f"Successfully synced {success_count} records.\nFailed/Skipped: {fail_count}"
+        )
+
+    def on_bulk_sync_fuzzy(self):
+        self._do_bulk_sync(
+            match_list=self.fuzzy_matches,
+            btn=self.btn_bulk_sync_fuzzy,
+            grid=self.grid_fuzzy,
+            label="⚡ Bulk Sync Baseline — High Confidence"
+        )
+
+    def on_bulk_sync_potential(self):
+        self._do_bulk_sync(
+            match_list=self.potential_matches,
+            btn=self.btn_bulk_sync_potential,
+            grid=self.grid_potential,
+            label="⚡ Bulk Sync Baseline — Review Required"
+        )
+
+
+
     def on_bulk_bday_use_excel(self):
         from core.database import update_birthday_db
         from PySide6.QtWidgets import QMessageBox
@@ -847,6 +960,25 @@ class MainWindow(QMainWindow):
         search = SearchBeneficiaryWindow(self)
         search.exec()
 
+    def open_bulk_transfer(self):
+        from ui.bulk_transfer_window import BulkTransferWindow
+        transfer = BulkTransferWindow(self)
+        transfer.exec()
+
+    def toggle_theme(self):
+        from core.app_settings import get_theme, set_theme
+        from ui.theme import apply_theme
+        from PySide6.QtWidgets import QApplication
+        
+        current_theme = get_theme()
+        new_theme = "dark" if current_theme == "light" else "light"
+        set_theme(new_theme)
+        
+        btn_text = "☀️ Light" if new_theme == "dark" else "🌙 Dark"
+        self.btn_theme_toggle.setText(btn_text)
+        
+        apply_theme(QApplication.instance(), new_theme)
+
     def open_settings(self):
         from ui.components.settings_dialog import SettingsDialog
         dlg = SettingsDialog(self)
@@ -885,7 +1017,7 @@ class MainWindow(QMainWindow):
         
         # Add custom Check for Updates button
         btn_check = msg_box.addButton("Check for Updates", QMessageBox.ActionRole)
-        msg_box.addButton(QMessageBox.Ok)
+        msg_box.addButton(QMessageBox.Close)
         
         msg_box.exec()
         
@@ -1013,7 +1145,10 @@ class MainWindow(QMainWindow):
         
         self.exact_matches = results.get("exact_matches", [])
         self.fuzzy_matches = results.get("fuzzy_matches", [])
+        self.potential_matches = results.get("potential_matches", [])
         self.btn_bulk_sync.setEnabled(len(self.exact_matches) > 0)
+        self.btn_bulk_sync_fuzzy.setEnabled(len(self.fuzzy_matches) > 0)
+        self.btn_bulk_sync_potential.setEnabled(len(self.potential_matches) > 0)
         
         # Populate Birthday Discrepancies
         self.bday_discrepancies = []
@@ -1045,12 +1180,12 @@ class MainWindow(QMainWindow):
         self.grid_fuzzy.set_data(self.fuzzy_matches, self.match_columns, action_label="Sync")
         self.tabs.setTabText(1, f"High Confidence ({len(self.fuzzy_matches)})")
         
-        self.tabs.setTabText(2, f"Birthday Discrepancies ({len(self.bday_discrepancies)})")
-        self.tabs.setTabText(3, f"Name Discrepancies ({len(self.name_discrepancies)})")
-        
         # Update Potential
-        self.grid_potential.set_data(results.get("potential_matches", []), self.match_columns, action_label="Resolve")
-        self.tabs.setTabText(4, f"Review Required ({len(results.get('potential_matches', []))})")
+        self.grid_potential.set_data(self.potential_matches, self.match_columns, action_label="Resolve")
+        self.tabs.setTabText(2, f"Review Required ({len(self.potential_matches)})")
+
+        self.tabs.setTabText(3, f"Name Discrepancies ({len(self.name_discrepancies)})")
+        self.tabs.setTabText(4, f"Birthday Discrepancies ({len(self.bday_discrepancies)})")
 
         # Update Missing
         missing_db_cols = [
@@ -1069,7 +1204,8 @@ class MainWindow(QMainWindow):
             {"label": "Site Name", "key": "site_name"},
             {"label": "Barangay", "key": "barangay_name"}
         ]
-        self.grid_missing_excel.set_data(results.get("missing_in_excel", []), missing_ex_cols)
+        self.grid_missing_excel.set_data(results.get("missing_in_excel", []), missing_ex_cols, action_label="MissingExcelActions")
+        self.grid_missing_excel.action_triggered.connect(self._on_missing_excel_action)
         self.tabs.setTabText(6, f"Missing in Excel ({len(results.get('missing_in_excel', []))})")
 
         # Update Excel Duplicates
@@ -1077,13 +1213,37 @@ class MainWindow(QMainWindow):
             {"label": "Name", "key": "name"},
             {"label": "Duplicate Type", "key": "type"},
             {"label": "Birthday", "key": "birthday", "getter": lambda r: format_display_date(r.get('birthday'))},
-            {"label": "Detected In Files", "key": "files"}
+            {"label": "Detected In Files", "key": "files", "getter": lambda r: str(r.get('files', '')).replace(", ", ",\n")}
         ]
         excel_dupes = results.get("excel_duplicates", [])
         self._excel_dupes_list = excel_dupes  # store full list for manage dialog
         self.grid_excel_duplicates.set_data(excel_dupes, duplicate_cols, action_label="ManageDup")
-        self.grid_excel_duplicates.action_triggered.connect(self._on_excel_dup_action)
         self.tabs.setTabText(7, f"Excel Duplicates ({len(excel_dupes)})")
+
+        # Update DB Duplicates
+        db_duplicates_groups = []
+        db_records = results.get("db_records", [])
+        if db_records:
+            from collections import defaultdict
+            groups = defaultdict(list)
+            for r in db_records:
+                key = (str(r.get('lastname', '')).upper().strip(), str(r.get('firstname', '')).upper().strip())
+                groups[key].append(r)
+            for key, group in groups.items():
+                if len(group) > 1:
+                    name = f"{key[0]}, {key[1]}"
+                    count = str(len(group))
+                    birthdays = ",\n".join(sorted(list(set(format_display_date(r.get('birthday')) for r in group if r.get('birthday')))))
+                    sites = ",\n".join(sorted(list(set(str(r.get('site_name', '—')) for r in group))))
+                    db_duplicates_groups.append({
+                        "name": name,
+                        "count": count,
+                        "birthdays": birthdays,
+                        "sites": sites,
+                        "records": group
+                    })
+        self.grid_db_duplicates.set_data(db_duplicates_groups, self.db_duplicate_columns, action_label="ManageDup")
+        self.tabs.setTabText(8, f"DB Duplicates ({len(db_duplicates_groups)})")
 
 
     def on_scan_error(self, err_msg):
@@ -1106,4 +1266,31 @@ class MainWindow(QMainWindow):
         from ui.components.db_duplicate_dialog import DBDuplicateDialog
         dlg = DBDuplicateDialog(duplicate_records, parent=self)
         dlg.exec()
+
+    def _on_db_dup_action(self, action, record, widget):
+        """Called when the 'Manage' button is clicked on a DB Duplicates row."""
+        if action == "manage":
+            self.open_db_duplicate_manager(record['records'])
+
+    def _on_missing_excel_action(self, action, record, widget):
+        if action == "delete_from_db":
+            from PySide6.QtWidgets import QMessageBox
+            from core.database import delete_beneficiary_cascade
+            
+            name = f"{record.get('lastname', '')}, {record.get('firstname', '')}"
+            reply = QMessageBox.question(
+                self, "Confirm Deletion",
+                f"Are you sure you want to permanently delete {name} and all related records from the database?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            )
+            
+            if reply == QMessageBox.Yes:
+                try:
+                    delete_beneficiary_cascade(record.get('beneficiary_id'))
+                    record['_deleted_from_db'] = True
+                    if hasattr(widget, 'mark_as_resolved'):
+                        widget.mark_as_resolved()
+                    QMessageBox.information(self, "Deleted", f"Successfully deleted {name}.")
+                except Exception as e:
+                    QMessageBox.critical(self, "Database Error", f"Failed to delete record:\n{e}")
 

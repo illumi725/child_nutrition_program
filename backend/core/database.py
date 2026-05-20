@@ -178,8 +178,9 @@ def sync_baseline(beneficiary_id, weight, height, date_collected, birthday):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 1. Update the birthday in beneficiaries
-            cursor.execute("UPDATE beneficiaries SET birthday = %s WHERE beneficiary_id = %s", (birthday, beneficiary_id))
+            # 1. Update the birthday in beneficiaries (only if birthday is provided)
+            if birthday:
+                cursor.execute("UPDATE beneficiaries SET birthday = %s WHERE beneficiary_id = %s", (birthday, beneficiary_id))
             
             # 2. Get gender to calculate anthro stats
             cursor.execute("SELECT gender, birthday FROM beneficiaries WHERE beneficiary_id = %s", (beneficiary_id,))
@@ -191,7 +192,13 @@ def sync_baseline(beneficiary_id, weight, height, date_collected, birthday):
                 try: ref_date = datetime.datetime.strptime(date_collected, '%Y-%m-%d').date()
                 except: pass
             
-            bday_dt = datetime.datetime.strptime(birthday, '%Y-%m-%d').date()
+            # Use the resolved birthday from DB (in case birthday param was None)
+            resolved_birthday = birthday or (str(ben.get('birthday', '')) if ben.get('birthday') else None)
+            if not resolved_birthday:
+                print(f"[SYNC-ERROR] No birthday available for beneficiary_id={beneficiary_id}")
+                return False
+            
+            bday_dt = datetime.datetime.strptime(resolved_birthday, '%Y-%m-%d').date()
             age_in_months = (ref_date.year - bday_dt.year) * 12 + ref_date.month - bday_dt.month
             
             try:
@@ -201,25 +208,53 @@ def sync_baseline(beneficiary_id, weight, height, date_collected, birthday):
                 
             stats = calculate_anthro_stats(age_in_months, ben['gender'], weight, height)
             
-            # 3. Update baseline_info
-            sql = """
-            UPDATE baseline_info SET 
-                weight = %s, height = %s, age = %s, date_collected = %s,
-                wfa_figure = %s, wfa_status = %s, 
-                hfa_figure = %s, hfa_status = %s, 
-                wfh_figure = %s, wfh_status = %s, 
-                bmifa_figure = %s, bmifa_status = %s, 
-                updated_at = NOW()
-            WHERE beneficiary_id = %s ORDER BY created_at DESC LIMIT 1
-            """
-            cursor.execute(sql, (
-                weight, height, age_in_months, date_collected, 
-                stats.get('wfa_figure'), stats.get('wfa_status'),
-                stats.get('hfa_figure'), stats.get('hfa_status'),
-                stats.get('wfh_figure'), stats.get('wfh_status'),
-                stats.get('bmifa_figure'), stats.get('bmifa_status'),
-                beneficiary_id
-            ))
+            # 3. Find the latest baseline_info row (SQLite-compatible: no ORDER BY on UPDATE)
+            cursor.execute(
+                "SELECT info_id FROM baseline_info WHERE beneficiary_id = %s ORDER BY created_at DESC LIMIT 1",
+                (beneficiary_id,)
+            )
+            info_row = cursor.fetchone()
+            
+            if info_row:
+                # Update existing row by specific info_id (SQLite-compatible)
+                sql = """
+                UPDATE baseline_info SET 
+                    weight = %s, height = %s, age = %s, date_collected = %s,
+                    wfa_figure = %s, wfa_status = %s, 
+                    hfa_figure = %s, hfa_status = %s, 
+                    wfh_figure = %s, wfh_status = %s, 
+                    bmifa_figure = %s, bmifa_status = %s, 
+                    updated_at = NOW()
+                WHERE info_id = %s
+                """
+                info_id = info_row['info_id'] if isinstance(info_row, dict) else info_row[0]
+                cursor.execute(sql, (
+                    weight, height, age_in_months, date_collected,
+                    stats.get('wfa_figure'), stats.get('wfa_status'),
+                    stats.get('hfa_figure'), stats.get('hfa_status'),
+                    stats.get('wfh_figure'), stats.get('wfh_status'),
+                    stats.get('bmifa_figure'), stats.get('bmifa_status'),
+                    info_id
+                ))
+            else:
+                # No baseline_info row exists yet — insert one
+                new_info_id = generate_beneficiary_id()
+                sql_ins = """
+                INSERT INTO baseline_info (
+                    info_id, beneficiary_id, gender, weight, height, age, date_collected,
+                    wfa_figure, wfa_status, hfa_figure, hfa_status,
+                    wfh_figure, wfh_status, bmifa_figure, bmifa_status
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql_ins, (
+                    new_info_id, beneficiary_id, ben['gender'],
+                    weight, height, age_in_months, date_collected,
+                    stats.get('wfa_figure'), stats.get('wfa_status'),
+                    stats.get('hfa_figure'), stats.get('hfa_status'),
+                    stats.get('wfh_figure'), stats.get('wfh_status'),
+                    stats.get('bmifa_figure'), stats.get('bmifa_status'),
+                ))
+            
             conn.commit()
             return True
     except Exception as e:
@@ -403,16 +438,17 @@ def add_beneficiary_to_db(site_id, lastname, firstname, middlename, birthday, ge
                     
                 stats = calculate_anthro_stats(age_in_months, gender.upper(), weight, height)
                 
+                info_id = generate_beneficiary_id()
                 sql_bl = """
                 INSERT INTO baseline_info (
-                    beneficiary_id, weight, height, age, date_collected,
+                    info_id, beneficiary_id, gender, weight, height, age, date_collected,
                     wfa_figure, wfa_status, hfa_figure, hfa_status,
                     wfh_figure, wfh_status, bmifa_figure, bmifa_status,
                     created_by
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(sql_bl, (
-                    beneficiary_id, weight, height, age_in_months, date_collected,
+                    info_id, beneficiary_id, gender.upper(), weight, height, age_in_months, date_collected,
                     stats.get('wfa_figure'), stats.get('wfa_status'),
                     stats.get('hfa_figure'), stats.get('hfa_status'),
                     stats.get('wfh_figure'), stats.get('wfh_status'),
@@ -509,4 +545,66 @@ def find_beneficiaries_by_name(lastname: str, firstname: str):
             return rows
     finally:
         conn.close()
+
+
+def bulk_transfer_beneficiaries(beneficiary_ids: list, target_site_id: str) -> tuple[bool, str | None]:
+    """
+    Bulk transfers a list of beneficiaries to a target site.
+    Returns (success, error_message).
+    """
+    if not beneficiary_ids:
+        return False, "No beneficiaries selected for transfer."
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            placeholders = ", ".join(["%s"] * len(beneficiary_ids))
+            sql = f"UPDATE beneficiaries SET site_id = %s WHERE beneficiary_id IN ({placeholders})"
+            cursor.execute(sql, [target_site_id] + list(beneficiary_ids))
+        conn.commit()
+        return True, None
+    except Exception as e:
+        conn.rollback()
+        print(f"[BULK-TRANSFER-ERROR] {e}")
+        return False, str(e)
+    finally:
+        conn.close()
+
+
+def get_beneficiaries_by_site(site_id: str) -> list:
+    """
+    Fetches all active (non-deleted) beneficiaries registered to a specific site_id.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT 
+                    b.beneficiary_id,
+                    b.lastname,
+                    b.firstname,
+                    b.middlename,
+                    b.birthday,
+                    b.gender,
+                    b.registration_date,
+                    s.site_name,
+                    br.barangay_name
+                FROM beneficiaries b
+                LEFT JOIN sites s ON b.site_id = s.site_id
+                LEFT JOIN barangays br ON s.barangay_code = br.barangay_code
+                WHERE b.site_id = %s AND b.deleted_at IS NULL
+                ORDER BY b.lastname, b.firstname
+            """
+            cursor.execute(sql, (site_id,))
+            rows = cursor.fetchall()
+            for r in rows:
+                if isinstance(r.get('birthday'), (datetime.date, datetime.datetime)):
+                    r['birthday'] = r['birthday'].strftime('%Y-%m-%d')
+                if isinstance(r.get('registration_date'), (datetime.date, datetime.datetime)):
+                    r['registration_date'] = r['registration_date'].strftime('%Y-%m-%d')
+            return rows
+    finally:
+        conn.close()
+
+
 

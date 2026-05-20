@@ -312,7 +312,7 @@ def evaluate_match(ex, db_r, sites_cache=None):
     db_site = (db_r.get('site_name') or '').strip().upper()
     site_mismatch = (ex_site != "" and db_site != "" and ex_site != db_site)
     
-    baseline_mismatch = weight_mismatch or height_mismatch or date_mismatch or birthday_mismatch or name_mismatch
+    baseline_mismatch = weight_mismatch or height_mismatch or date_mismatch or birthday_mismatch
     
     return {
         "score": score,

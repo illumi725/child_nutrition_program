@@ -417,7 +417,7 @@
 
             <div class="card">
                 <h2>Matching and Correction Grids</h2>
-                <p>The main screen classifies findings into eight specialized, tabbed results views. Each grid lists conflicting data side-by-side with clear action controls.</p>
+                <p>The main screen classifies findings into nine specialized, tabbed results views. Each grid lists conflicting data side-by-side with clear action controls. The tables feature horizontal scrolling to ensure full visibility of long names and file paths without truncation.</p>
                 
                 <table>
                     <thead>
@@ -439,9 +439,9 @@
                             <td>Review and match baseline entries to align records.</td>
                         </tr>
                         <tr>
-                            <td><span class="badge badge-orange">Birthday Discrepancies</span></td>
-                            <td>Identical names mapped but birthdays disagree (e.g., typos in input fields).</td>
-                            <td>Choose <strong>Use Excel</strong>, <strong>Use DB</strong>, or input a <strong>Manual Date</strong> to correct both files.</td>
+                            <td><span class="badge badge-red">Review Required</span></td>
+                            <td>Significant parameter differences require manual human confirmation.</td>
+                            <td>Double-check original papers before synchronizing.</td>
                         </tr>
                         <tr>
                             <td><span class="badge badge-orange">Name Discrepancies</span></td>
@@ -449,14 +449,29 @@
                             <td>Select <strong>Use Excel</strong> to update the DB, <strong>Use DB</strong> to update Excel, or type manually.</td>
                         </tr>
                         <tr>
-                            <td><span class="badge badge-red">Review Required</span></td>
-                            <td>Significant parameter differences require manual human confirmation.</td>
-                            <td>Double-check original papers before synchronizing.</td>
+                            <td><span class="badge badge-orange">Birthday Discrepancies</span></td>
+                            <td>Identical names mapped but birthdays disagree (e.g., typos in input fields).</td>
+                            <td>Choose <strong>Use Excel</strong>, <strong>Use DB</strong>, or input a <strong>Manual Date</strong> to correct both files.</td>
                         </tr>
                         <tr>
                             <td><span class="badge badge-blue">Missing in DB</span></td>
                             <td>Beneficiaries found in the Excel sheet who do not exist in the database.</td>
                             <td>Click <strong>Add to DB</strong> to open the registration dialog and record the child.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-red">Missing in Excel</span></td>
+                            <td>Beneficiaries existing in the database but completely absent from the scanned Excel baseline.</td>
+                            <td>Click <strong>Delete from DB</strong> to securely remove outdated or erroneous records permanently.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-orange">Excel Duplicates</span></td>
+                            <td>Multiple entries found with the exact same name within the scanned Excel files.</td>
+                            <td>Click <strong>Manage</strong> to view the conflicts and decide which row is valid.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-red">DB Duplicates</span></td>
+                            <td>Multiple records found with the same name residing inside the database itself.</td>
+                            <td>Click <strong>Manage</strong> to review related records and resolve these internal database redundancies.</td>
                         </tr>
                     </tbody>
                 </table>

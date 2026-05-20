@@ -301,7 +301,7 @@ class LoginWindow(QWidget):
         """)
         self.txt_access_code.returnPressed.connect(self.attempt_login)
         
-        self.btn_login = QPushButton("Verify & Login")
+        self.btn_login = QPushButton(" Verify and Login")
         self.btn_login.setStyleSheet("""
             QPushButton {
                 background-color: #2980b9; color: white; font-weight: bold;
@@ -630,5 +630,5 @@ class LoginWindow(QWidget):
                 QMessageBox.critical(self, "Authentication Failed", f"Invalid Access Code. You have {rem} attempt(s) remaining.")
                 self.txt_access_code.clear()
                 self.btn_login.setEnabled(True)
-                self.btn_login.setText("Verify & Login")
+                self.btn_login.setText(" Verify and Login")
                 self.txt_access_code.setFocus()

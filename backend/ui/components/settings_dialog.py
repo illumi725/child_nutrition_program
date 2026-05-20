@@ -80,11 +80,7 @@ class SettingsDialog(QDialog):
         btn_row2 = QHBoxLayout()
         btn_row2.addStretch()
         self.btn_save = QPushButton("Save & Close")
-        self.btn_save.setStyleSheet("""
-            QPushButton { background-color: #2980b9; color: white; font-weight: bold;
-                          padding: 8px 20px; border: none; border-radius: 4px; }
-            QPushButton:hover { background-color: #3498db; }
-        """)
+
         self.btn_save.clicked.connect(self._save_and_close)
         btn_row2.addWidget(self.btn_save)
         layout.addLayout(btn_row2)

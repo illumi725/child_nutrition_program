@@ -59,7 +59,7 @@ class SearchBeneficiaryWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Search Beneficiary")
-        self.setMinimumSize(950, 600)
+        self.setMinimumSize(800, 500)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
 
         # Center on screen
@@ -76,42 +76,23 @@ class SearchBeneficiaryWindow(QDialog):
 
         # Header
         lbl_title = QLabel("🔍  Beneficiary Search")
-        lbl_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50;")
+        lbl_title.setStyleSheet("font-size: 18px; font-weight: bold;")
+        lbl_title.setWordWrap(True)
         layout.addWidget(lbl_title)
 
         lbl_sub = QLabel("Search by name, birthday (YYYY-MM-DD), or ID.")
-        lbl_sub.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+        lbl_sub.setStyleSheet("font-size: 12px;")
+        lbl_sub.setWordWrap(True)
         layout.addWidget(lbl_sub)
 
         # Search Bar
         search_layout = QHBoxLayout()
         self.txt_search = QLineEdit()
         self.txt_search.setPlaceholderText("Type a last name, first name, birthday, or beneficiary ID...")
-        self.txt_search.setStyleSheet("""
-            QLineEdit {
-                padding: 8px 12px;
-                border: 2px solid #bdc3c7;
-                border-radius: 5px;
-                font-size: 14px;
-            }
-            QLineEdit:focus { border-color: #3498db; }
-        """)
         self.txt_search.returnPressed.connect(self.do_search)
 
         self.btn_search = QPushButton("Search")
         self.btn_search.setFixedWidth(100)
-        self.btn_search.setStyleSheet("""
-            QPushButton {
-                background-color: #2980b9;
-                color: white;
-                font-weight: bold;
-                padding: 8px;
-                border: none;
-                border-radius: 5px;
-                font-size: 14px;
-            }
-            QPushButton:hover { background-color: #3498db; }
-        """)
         self.btn_search.clicked.connect(self.do_search)
 
         search_layout.addWidget(self.txt_search)
@@ -120,13 +101,14 @@ class SearchBeneficiaryWindow(QDialog):
 
         # Status label
         self.lbl_status = QLabel("Enter a search term above and press Search.")
-        self.lbl_status.setStyleSheet("color: #95a5a6; font-size: 11px;")
+        self.lbl_status.setStyleSheet("font-size: 11px;")
+        self.lbl_status.setWordWrap(True)
         layout.addWidget(self.lbl_status)
 
         # Separator
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
-        line.setStyleSheet("color: #ecf0f1;")
+
         layout.addWidget(line)
 
         # Results Table
@@ -137,22 +119,15 @@ class SearchBeneficiaryWindow(QDialog):
             "Birthday", "Gender", "Site", "Barangay",
             "Registered On", "Added By"
         ])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table.setWordWrap(False)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.table.verticalHeader().setDefaultSectionSize(28)
+        self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setAlternatingRowColors(True)
-        self.table.setStyleSheet("""
-            QTableWidget { border: 1px solid #ecf0f1; font-size: 13px; }
-            QHeaderView::section {
-                background-color: #2c3e50;
-                color: white;
-                padding: 6px;
-                font-weight: bold;
-                border: none;
-            }
-            QTableWidget::item:selected { background-color: #d6eaf8; color: #2c3e50; }
-        """)
         layout.addWidget(self.table)
 
         # Close button
@@ -202,11 +177,17 @@ class SearchBeneficiaryWindow(QDialog):
             ]
             for col_idx, val in enumerate(values):
                 item = QTableWidgetItem(str(val))
-                item.setTextAlignment(Qt.AlignCenter)
+                if col_idx in (1, 2, 3):  # Last Name, First Name, Middle Name
+                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                else:
+                    item.setTextAlignment(Qt.AlignCenter)
                 self.table.setItem(row_idx, col_idx, item)
+        self.table.resizeColumnsToContents()
 
     def on_error(self, err):
         self.btn_search.setEnabled(True)
         self.btn_search.setText("Search")
         self.lbl_status.setText(f"❌  Error: {err}")
         self.lbl_status.setStyleSheet("color: red; font-size: 11px;")
+
+

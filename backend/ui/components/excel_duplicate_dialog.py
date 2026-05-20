@@ -46,21 +46,32 @@ class ExcelDuplicateDialog(QDialog):
         self.rows = dup_entry.get('rows', [])
 
         self.setWindowTitle(f"Manage Excel Duplicate — {dup_entry.get('name', '')}")
-        self.setMinimumSize(820, 420)
+        self.setMinimumSize(720, 420)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
-
-        screen = self.screen().availableGeometry()
-        self.move((screen.width() - self.width()) // 2,
-                  (screen.height() - self.height()) // 2)
 
         self.setup_ui()
         self.populate_table()
+
+        # Center Dialog perfectly relative to parent window or screen
+        if parent:
+            parent_geo = parent.geometry()
+            self.move(
+                parent_geo.left() + (parent_geo.width() - self.width()) // 2,
+                parent_geo.top() + (parent_geo.height() - self.height()) // 2
+            )
+        else:
+            screen = self.screen().availableGeometry()
+            self.move(
+                screen.x() + (screen.width() - self.width()) // 2,
+                screen.y() + (screen.height() - self.height()) // 2
+            )
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
 
         lbl = QLabel(f"📋  Excel Duplicate: {self.dup_entry.get('name', '')}")
         lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #c0392b;")
+        lbl.setWordWrap(True)
         layout.addWidget(lbl)
 
         sub = QLabel(
@@ -68,10 +79,12 @@ class ExcelDuplicateDialog(QDialog):
             "Tick the row(s) you want to permanently DELETE from the Excel file, then click [Delete Selected Rows]."
         )
         sub.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+        sub.setWordWrap(True)
         layout.addWidget(sub)
 
         self.lbl_status = QLabel("Select duplicate rows to delete.")
         self.lbl_status.setStyleSheet("color: #2980b9; font-size: 11px;")
+        self.lbl_status.setWordWrap(True)
         layout.addWidget(self.lbl_status)
 
         # Table
@@ -82,14 +95,13 @@ class ExcelDuplicateDialog(QDialog):
         ])
         
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(6, QHeaderView.Stretch)  # Let File column take remaining space
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        header.setStretchLastSection(True)
 
+        self.table.setWordWrap(False)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.table.verticalHeader().setDefaultSectionSize(28)
+        self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -155,12 +167,16 @@ class ExcelDuplicateDialog(QDialog):
             ]
             for col_i, val in enumerate(vals, start=1):
                 item = QTableWidgetItem(val)
-                item.setTextAlignment(Qt.AlignCenter)
-                if col_i == 6:  # File column
+                if col_i == 1:  # Name column
+                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                elif col_i == 6:  # File column
                     # Left-align file name and add tooltip for full visibility
                     item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
                     item.setToolTip(rec.get('file_path', ''))
+                else:
+                    item.setTextAlignment(Qt.AlignCenter)
                 self.table.setItem(row_i, col_i, item)
+        self.table.resizeColumnsToContents()
 
     def _centered_widget(self, widget):
         container = __import__('PySide6.QtWidgets', fromlist=['QWidget']).QWidget()

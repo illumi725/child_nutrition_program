@@ -49,6 +49,16 @@ def set_mode(mode: str):
     d['mode'] = mode
     _save(d)
 
+def get_theme() -> str:
+    """Returns 'light' or 'dark'. Defaults to 'light'."""
+    return _load().get('theme', 'light')
+
+def set_theme(theme: str):
+    assert theme in ('light', 'dark')
+    d = _load()
+    d['theme'] = theme
+    _save(d)
+
 def get_local_db_path() -> str:
     """Returns the absolute path to the local SQLite database file."""
     return os.path.join(_get_settings_dir(), "hapag_local.db")

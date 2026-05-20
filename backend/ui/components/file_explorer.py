@@ -16,6 +16,13 @@ class CheckableFileSystemModel(QFileSystemModel):
         return default_flags
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
+        if role == Qt.DecorationRole and index.column() == 0:
+            from ui.theme import create_emoji_icon
+            if self.isDir(index):
+                return create_emoji_icon("📁", 24)
+            else:
+                return create_emoji_icon("📄", 24)
+        
         if role == Qt.CheckStateRole and index.column() == 0:
             path = self.filePath(index)
             if path in self.checked_paths:

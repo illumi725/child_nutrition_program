@@ -8,11 +8,15 @@ from PySide6.QtWidgets import QApplication
 from ui.login_window import LoginWindow
 from ui.main_window import MainWindow
 
+from core.app_settings import get_theme
+from ui.theme import apply_theme
+
 def main():
     app = QApplication(sys.argv)
     
-    # Optionally apply a modern style
+    # Apply macOS-inspired style with Dark/Light mode support
     app.setStyle("Fusion")
+    apply_theme(app, get_theme())
     
     login = LoginWindow()
     main_window = None

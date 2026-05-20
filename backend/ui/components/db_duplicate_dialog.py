@@ -70,15 +70,25 @@ class DBDuplicateDialog(QDialog):
         self.checkboxes = []
 
         self.setWindowTitle("Manage DB Duplicate Beneficiaries")
-        self.setMinimumSize(900, 520)
+        self.setMinimumSize(780, 480)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
-
-        screen = self.screen().availableGeometry()
-        self.move((screen.width() - self.width()) // 2,
-                  (screen.height() - self.height()) // 2)
 
         self.setup_ui()
         self.load_counts()
+
+        # Center Dialog perfectly relative to parent window or screen
+        if parent:
+            parent_geo = parent.geometry()
+            self.move(
+                parent_geo.left() + (parent_geo.width() - self.width()) // 2,
+                parent_geo.top() + (parent_geo.height() - self.height()) // 2
+            )
+        else:
+            screen = self.screen().availableGeometry()
+            self.move(
+                screen.x() + (screen.width() - self.width()) // 2,
+                screen.y() + (screen.height() - self.height()) // 2
+            )
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -86,6 +96,7 @@ class DBDuplicateDialog(QDialog):
         # Header
         lbl = QLabel("⚠  Duplicate Beneficiary Records Found")
         lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #c0392b;")
+        lbl.setWordWrap(True)
         layout.addWidget(lbl)
 
         sub = QLabel(
@@ -93,10 +104,12 @@ class DBDuplicateDialog(QDialog):
             "Tick the row(s) you want to permanently DELETE from the Database, then click [Delete Selected]."
         )
         sub.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+        sub.setWordWrap(True)
         layout.addWidget(sub)
 
         self.lbl_status = QLabel("Loading related record counts...")
         self.lbl_status.setStyleSheet("color: #2980b9; font-size: 11px;")
+        self.lbl_status.setWordWrap(True)
         layout.addWidget(self.lbl_status)
 
         # Table
@@ -107,7 +120,11 @@ class DBDuplicateDialog(QDialog):
             "Gender", "Site",
             "Feedings", "Baseline", "Ht/Wt", "Parents / Absences"
         ])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table.setWordWrap(False)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.table.verticalHeader().setDefaultSectionSize(28)
+        self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -198,7 +215,10 @@ class DBDuplicateDialog(QDialog):
                 if col_i == 0:
                     continue
                 item = QTableWidgetItem(val)
-                item.setTextAlignment(Qt.AlignCenter)
+                if col_i in (2, 3):  # Last Name, First Name
+                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                else:
+                    item.setTextAlignment(Qt.AlignCenter)
                 if is_green:
                     item.setBackground(QColor("#eafaf1"))
                     item.setForeground(QColor("black"))
@@ -210,6 +230,7 @@ class DBDuplicateDialog(QDialog):
                 bg_item.setBackground(QColor("#eafaf1"))
             self.table.setItem(row_i, 0, bg_item)
 
+        self.table.resizeColumnsToContents()
         self.lbl_status.setText(
             f"✅  Loaded {len(records_with_counts)} duplicate record(s). "
             "Rows highlighted in green have related data — consider keeping those."
