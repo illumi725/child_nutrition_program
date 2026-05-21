@@ -17,19 +17,18 @@ class UpdateCheckThread(QThread):
     up_to_date = Signal()
     error_occurred = Signal(str)
 
-    # Bitbucket workspace and repo details
-    BITBUCKET_WORKSPACE = "asa-projects"
-    BITBUCKET_REPO = "cnp_desktop_app"
+    # GitHub repository details
+    GITHUB_OWNER = "asa-projects"
+    GITHUB_REPO  = "cnp_desktop_app"
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        # Bitbucket tags API — sorted descending so the first result is the latest tag
+        # GitHub Releases API — returns the latest published release
         self.api_url = (
-            f"https://api.bitbucket.org/2.0/repositories/"
-            f"{self.BITBUCKET_WORKSPACE}/{self.BITBUCKET_REPO}/refs/tags"
-            f"?sort=-name&pagelen=1"
+            f"https://api.github.com/repos/"
+            f"{self.GITHUB_OWNER}/{self.GITHUB_REPO}/releases/latest"
         )
-        
+
     def _parse_version(self, version_str):
         """Extracts integers from a version string like 'v1.0.5' for comparison."""
         numbers = re.findall(r'\d+', version_str)
@@ -37,49 +36,42 @@ class UpdateCheckThread(QThread):
 
     def run(self):
         try:
-            # Set a short timeout so we don't hang the thread indefinitely on slow connections
-            response = requests.get(self.api_url, timeout=5)
+            headers = {"Accept": "application/vnd.github+json"}
+            response = requests.get(self.api_url, headers=headers, timeout=5)
             if response.status_code == 200:
                 data = response.json()
-                values = data.get("values", [])
-                if not values:
-                    self.up_to_date.emit()
-                    return
+                latest_tag = data.get("tag_name", "")
+                body       = data.get("body", "No release notes provided.")
+                html_url   = data.get("html_url", "")
+                assets     = data.get("assets", [])
 
-                latest_tag = values[0].get("name", "")
-                
                 # Simple version comparison
                 current_parts = self._parse_version(APP_VERSION)
-                latest_parts = self._parse_version(latest_tag)
-                
-                # If parsed parts exist and latest is greater than current
+                latest_parts  = self._parse_version(latest_tag)
+
                 if current_parts and latest_parts and latest_parts > current_parts:
-                    # Bitbucket doesn't have release notes via tags API — use a generic message
-                    body = "A new version is available. Please update to get the latest fixes and improvements."
-                    html_url = (
-                        f"https://bitbucket.org/{self.BITBUCKET_WORKSPACE}/"
-                        f"{self.BITBUCKET_REPO}/downloads"
-                    )
-                    
-                    # Format platform-specific download zip URL based on OS
-                    # These files are uploaded to Bitbucket Downloads by the CI/CD pipeline
-                    tag = latest_tag
-                    base_url = (
-                        f"https://api.bitbucket.org/2.0/repositories/"
-                        f"{self.BITBUCKET_WORKSPACE}/{self.BITBUCKET_REPO}/downloads"
-                    )
+                    # Match the platform-specific asset by name
                     if sys.platform.startswith('win32'):
-                        download_url = f"{base_url}/hapag_comparator_windows_{tag}.zip"
+                        keyword = "windows"
                     elif sys.platform.startswith('darwin'):
-                        download_url = f"{base_url}/hapag_comparator_macos_{tag}.zip"
+                        keyword = "macos"
                     else:
-                        download_url = f"{base_url}/hapag_comparator_linux_{tag}.tar.gz"
-                        
+                        keyword = "linux"
+
+                    download_url = ""
+                    for asset in assets:
+                        if keyword in asset.get("name", "").lower():
+                            download_url = asset.get("browser_download_url", "")
+                            break
+
                     self.update_available.emit(latest_tag, body, html_url, download_url)
                 else:
                     self.up_to_date.emit()
+            elif response.status_code == 404:
+                # No release published yet — treat as up to date
+                self.up_to_date.emit()
             else:
-                self.error_occurred.emit(f"Bitbucket API returned {response.status_code}")
+                self.error_occurred.emit(f"GitHub API returned {response.status_code}")
         except Exception as e:
             self.error_occurred.emit(str(e))
 
@@ -107,16 +99,16 @@ class DownloadUpdateThread(QThread):
             if response.status_code != 200:
                 self.error.emit(f"Failed to download update: HTTP {response.status_code}")
                 return
-                
+
             total_size = int(response.headers.get('content-length', 0))
-            
+
             # Save temporary files in OS temp dir
             temp_dir = tempfile.gettempdir()
             zip_path = os.path.join(temp_dir, "hapag_update.zip")
-            
+
             downloaded = 0
             chunk_size = 1024 * 64
-            
+
             with open(zip_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     if self._is_cancelled:
@@ -130,15 +122,15 @@ class DownloadUpdateThread(QThread):
                             self.progress.emit(pct, f"Downloading update... {pct}% ({downloaded // 1024} KB / {total_size // 1024} KB)")
                         else:
                             self.progress.emit(50, f"Downloading update... ({downloaded // 1024} KB)")
-                            
+
             if self._is_cancelled:
                 self.error.emit("Download cancelled.")
                 return
-                
+
             self.progress.emit(95, "Extracting update archive...")
-            
+
             extracted_dir = os.path.join(temp_dir, "hapag_extracted")
-            
+
             # Wipe previous extraction folder if present
             if os.path.exists(extracted_dir):
                 import shutil
@@ -147,25 +139,25 @@ class DownloadUpdateThread(QThread):
                 except Exception as e:
                     pass
             os.makedirs(extracted_dir, exist_ok=True)
-            
+
             # Unzip contents
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(extracted_dir)
-                
+
             # Clean up the zip file itself
             try:
                 os.remove(zip_path)
             except:
                 pass
-                
+
             # Auto-detect nested packaging folders inside the zip (e.g. hapag-comparator-linux/)
             source_dir = extracted_dir
             contents = os.listdir(extracted_dir)
             if len(contents) == 1 and os.path.isdir(os.path.join(extracted_dir, contents[0])):
                 source_dir = os.path.join(extracted_dir, contents[0])
-                
+
             self.progress.emit(100, "Update extraction ready.")
             self.finished.emit(extracted_dir, source_dir)
-            
+
         except Exception as e:
             self.error.emit(str(e))

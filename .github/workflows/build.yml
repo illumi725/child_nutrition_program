@@ -1,25 +1,21 @@
-name: Build Windows & macOS
+name: Build & Release
 
-# Triggered automatically when Bitbucket pushes the tag to this GitHub mirror
 on:
   push:
     tags:
       - 'v*'
 
 jobs:
-  # ---------------------------------------------------------
-  # WINDOWS BUILD (GitHub's free Windows runner)
-  # ---------------------------------------------------------
-  build-windows:
-    name: Build Windows Executable
-    runs-on: windows-latest
-
+  # -----------------------------------------------------------
+  # LINUX BUILD
+  # -----------------------------------------------------------
+  build-linux:
+    name: Build Linux Executable
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
@@ -33,12 +29,60 @@ jobs:
         working-directory: backend
         env:
           CLIENT_SECRETS_JSON: ${{ secrets.CLIENT_SECRETS_JSON }}
-          DB_HOST_PROD: ${{ secrets.DB_HOST_PROD }}
-          DB_USERNAME_PROD: ${{ secrets.DB_USERNAME_PROD }}
-          DB_PASSWORD_PROD: ${{ secrets.DB_PASSWORD_PROD }}
-          DB_DATABASE_PROD: ${{ secrets.DB_DATABASE_PROD }}
-          DB_PORT_PROD: ${{ secrets.DB_PORT_PROD }}
-          APP_VERSION_TAG: ${{ github.ref_name }}
+          DB_HOST_PROD:        ${{ secrets.DB_HOST_PROD }}
+          DB_USERNAME_PROD:    ${{ secrets.DB_USERNAME_PROD }}
+          DB_PASSWORD_PROD:    ${{ secrets.DB_PASSWORD_PROD }}
+          DB_DATABASE_PROD:    ${{ secrets.DB_DATABASE_PROD }}
+          DB_PORT_PROD:        ${{ secrets.DB_PORT_PROD }}
+          APP_VERSION_TAG:     ${{ github.ref_name }}
+        run: |
+          echo "$CLIENT_SECRETS_JSON" > client_secrets.json
+          python scripts/inject_config.py
+
+      - name: Build with PyInstaller
+        working-directory: backend
+        run: pyinstaller hapag_comparator.spec
+
+      - name: Compress output
+        run: |
+          tar -czvf hapag_comparator_linux_${{ github.ref_name }}.tar.gz \
+            -C backend/dist/hapag_comparator .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: hapag_comparator_linux_*.tar.gz
+
+  # -----------------------------------------------------------
+  # WINDOWS BUILD
+  # -----------------------------------------------------------
+  build-windows:
+    name: Build Windows Executable
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Inject secrets
+        working-directory: backend
+        env:
+          CLIENT_SECRETS_JSON: ${{ secrets.CLIENT_SECRETS_JSON }}
+          DB_HOST_PROD:        ${{ secrets.DB_HOST_PROD }}
+          DB_USERNAME_PROD:    ${{ secrets.DB_USERNAME_PROD }}
+          DB_PASSWORD_PROD:    ${{ secrets.DB_PASSWORD_PROD }}
+          DB_DATABASE_PROD:    ${{ secrets.DB_DATABASE_PROD }}
+          DB_PORT_PROD:        ${{ secrets.DB_PORT_PROD }}
+          APP_VERSION_TAG:     ${{ github.ref_name }}
         run: |
           $env:CLIENT_SECRETS_JSON | Out-File -FilePath client_secrets.json -Encoding utf8
           python scripts/inject_config.py
@@ -49,32 +93,25 @@ jobs:
 
       - name: Compress output
         run: |
-          Compress-Archive -Path backend\dist\hapag_comparator\* -DestinationPath hapag_comparator_windows_${{ github.ref_name }}.zip
+          Compress-Archive -Path backend\dist\hapag_comparator\* `
+            -DestinationPath hapag_comparator_windows_${{ github.ref_name }}.zip
 
-      - name: Upload to Bitbucket Downloads
-        shell: bash
-        env:
-          BITBUCKET_USERNAME: ${{ secrets.BITBUCKET_USERNAME }}
-          BITBUCKET_APP_PASSWORD: ${{ secrets.BITBUCKET_APP_PASSWORD }}
-        run: |
-          curl -X POST \
-            "https://api.bitbucket.org/2.0/repositories/asa-projects/cnp_desktop_app/downloads" \
-            -u "$BITBUCKET_USERNAME:$BITBUCKET_APP_PASSWORD" \
-            -F "files=@hapag_comparator_windows_${{ github.ref_name }}.zip"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: hapag_comparator_windows_*.zip
 
-  # ---------------------------------------------------------
-  # macOS BUILD (GitHub's free macOS runner)
-  # ---------------------------------------------------------
+  # -----------------------------------------------------------
+  # macOS BUILD
+  # -----------------------------------------------------------
   build-macos:
     name: Build macOS Executable
     runs-on: macos-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
@@ -88,12 +125,12 @@ jobs:
         working-directory: backend
         env:
           CLIENT_SECRETS_JSON: ${{ secrets.CLIENT_SECRETS_JSON }}
-          DB_HOST_PROD: ${{ secrets.DB_HOST_PROD }}
-          DB_USERNAME_PROD: ${{ secrets.DB_USERNAME_PROD }}
-          DB_PASSWORD_PROD: ${{ secrets.DB_PASSWORD_PROD }}
-          DB_DATABASE_PROD: ${{ secrets.DB_DATABASE_PROD }}
-          DB_PORT_PROD: ${{ secrets.DB_PORT_PROD }}
-          APP_VERSION_TAG: ${{ github.ref_name }}
+          DB_HOST_PROD:        ${{ secrets.DB_HOST_PROD }}
+          DB_USERNAME_PROD:    ${{ secrets.DB_USERNAME_PROD }}
+          DB_PASSWORD_PROD:    ${{ secrets.DB_PASSWORD_PROD }}
+          DB_DATABASE_PROD:    ${{ secrets.DB_DATABASE_PROD }}
+          DB_PORT_PROD:        ${{ secrets.DB_PORT_PROD }}
+          APP_VERSION_TAG:     ${{ github.ref_name }}
         run: |
           echo "$CLIENT_SECRETS_JSON" > client_secrets.json
           python scripts/inject_config.py
@@ -107,12 +144,34 @@ jobs:
           cd backend/dist
           zip -r ../../hapag_comparator_macos_${{ github.ref_name }}.zip hapag_comparator.app
 
-      - name: Upload to Bitbucket Downloads
-        env:
-          BITBUCKET_USERNAME: ${{ secrets.BITBUCKET_USERNAME }}
-          BITBUCKET_APP_PASSWORD: ${{ secrets.BITBUCKET_APP_PASSWORD }}
-        run: |
-          curl -X POST \
-            "https://api.bitbucket.org/2.0/repositories/asa-projects/cnp_desktop_app/downloads" \
-            -u "$BITBUCKET_USERNAME:$BITBUCKET_APP_PASSWORD" \
-            -F "files=@hapag_comparator_macos_${{ github.ref_name }}.zip"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: hapag_comparator_macos_*.zip
+
+  # -----------------------------------------------------------
+  # CREATE GITHUB RELEASE & ATTACH ALL ARTIFACTS
+  # -----------------------------------------------------------
+  release:
+    name: Publish GitHub Release
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            hapag_comparator_linux_*.tar.gz
+            hapag_comparator_windows_*.zip
+            hapag_comparator_macos_*.zip
