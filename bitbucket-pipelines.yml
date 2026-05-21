@@ -5,7 +5,7 @@ pipelines:
     v*:
       - parallel:
           # ---------------------------------------------------
-          # 1. LINUX BUILD
+          # 1. LINUX BUILD (Bitbucket free cloud runner)
           # ---------------------------------------------------
           - step:
               name: Build Linux Executable
@@ -24,40 +24,24 @@ pipelines:
                 - hapag_comparator_linux_*.tar.gz
 
           # ---------------------------------------------------
-          # 2. WINDOWS BUILD (Cross-Compiled via Wine)
+          # 2. MIRROR TAG TO GITHUB
+          # This triggers GitHub Actions to build Windows & macOS
           # ---------------------------------------------------
           - step:
-              name: Build Windows Executable
-              image: tobix/pywine:3.12
-              caches:
-                - pip
+              name: Mirror Tag to GitHub (Triggers Win/Mac Builds)
               script:
-                - cd backend
-                # Install dependencies in the Wine Windows environment
-                - wine python -m pip install -r requirements.txt
-                - wine python -m pip install pyinstaller
-                - echo "$CLIENT_SECRETS_JSON" > client_secrets.json
-                - export APP_VERSION_TAG=$BITBUCKET_TAG
-                - wine python scripts/inject_config.py
-                - wine pyinstaller hapag_comparator.spec
-                # Compress the output using Python's built-in zip module
-                - wine python -m zipfile -c ../hapag_comparator_windows_${BITBUCKET_TAG}.zip dist/hapag_comparator/
-              artifacts:
-                - hapag_comparator_windows_*.zip
+                - git remote add github https://x-token-auth:${GITHUB_TOKEN}@github.com/asa-projects/cnp_desktop_app.git
+                - git push github ${BITBUCKET_TAG}
 
       # ---------------------------------------------------
-      # 3. UPLOAD TO BITBUCKET DOWNLOADS
+      # 3. UPLOAD LINUX BUILD TO BITBUCKET DOWNLOADS
+      # (Windows & macOS are uploaded directly by GitHub Actions)
       # ---------------------------------------------------
       - step:
-          name: Upload Artifacts to Downloads
+          name: Upload Linux Artifact to Downloads
           script:
             - pipe: atlassian/bitbucket-upload-file:0.3.2
               variables:
                 BITBUCKET_USERNAME: $BITBUCKET_USERNAME
                 BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
                 FILENAME: 'hapag_comparator_linux_${BITBUCKET_TAG}.tar.gz'
-            - pipe: atlassian/bitbucket-upload-file:0.3.2
-              variables:
-                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
-                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
-                FILENAME: 'hapag_comparator_windows_${BITBUCKET_TAG}.zip'
