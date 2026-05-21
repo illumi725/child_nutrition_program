@@ -142,7 +142,7 @@ jobs:
       - name: Compress output
         run: |
           cd backend/dist
-          zip -r ../../hapag_comparator_macos_${{ github.ref_name }}.zip hapag_comparator.app
+          zip -r ../../hapag_comparator_macos_${{ github.ref_name }}.zip hapag_comparator
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
