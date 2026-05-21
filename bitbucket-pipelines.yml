@@ -2,7 +2,7 @@ image: python:3.12
 
 pipelines:
   tags:
-    v*: # Triggers when a tag starting with 'v' is pushed
+    v*:
       - parallel:
           # ---------------------------------------------------
           # 1. LINUX BUILD
@@ -15,13 +15,13 @@ pipelines:
                 - cd backend
                 - pip install -r requirements.txt
                 - pip install pyinstaller
-                # Inject the secret file from Bitbucket Repository Variable
                 - echo "$CLIENT_SECRETS_JSON" > client_secrets.json
+                - export APP_VERSION_TAG=$BITBUCKET_TAG
+                - python scripts/inject_config.py
                 - pyinstaller hapag_comparator.spec
-                # Compress the output
-                - tar -czvf ../hapag_comparator_linux.tar.gz -C dist/hapag_comparator .
+                - tar -czvf ../hapag_comparator_linux_${BITBUCKET_TAG}.tar.gz -C dist/hapag_comparator .
               artifacts:
-                - hapag_comparator_linux.tar.gz
+                - hapag_comparator_linux_*.tar.gz
 
           # ---------------------------------------------------
           # 2. WINDOWS BUILD
@@ -36,13 +36,13 @@ pipelines:
                 - cd backend
                 - pip install -r requirements.txt
                 - pip install pyinstaller
-                # Inject the secret file from Bitbucket Repository Variable
-                - $env:CLIENT_SECRETS_JSON | Set-Content -Path client_secrets.json
+                - $env:CLIENT_SECRETS_JSON | Out-File -FilePath client_secrets.json -Encoding utf8
+                - $env:APP_VERSION_TAG = $env:BITBUCKET_TAG
+                - python scripts/inject_config.py
                 - pyinstaller hapag_comparator.spec
-                # Compress the output using PowerShell
-                - Compress-Archive -Path dist\hapag_comparator\* -DestinationPath ..\hapag_comparator_windows.zip
+                - Compress-Archive -Path dist\hapag_comparator\* -DestinationPath ..\hapag_comparator_windows_${env:BITBUCKET_TAG}.zip
               artifacts:
-                - hapag_comparator_windows.zip
+                - hapag_comparator_windows_*.zip
 
           # ---------------------------------------------------
           # 3. macOS BUILD
@@ -57,11 +57,33 @@ pipelines:
                 - cd backend
                 - pip install -r requirements.txt
                 - pip install pyinstaller
-                # Inject the secret file from Bitbucket Repository Variable
                 - echo "$CLIENT_SECRETS_JSON" > client_secrets.json
+                - export APP_VERSION_TAG=$BITBUCKET_TAG
+                - python scripts/inject_config.py
                 - pyinstaller hapag_comparator.spec
-                # The output for mac is usually an .app bundle. Let's zip it.
                 - cd dist
-                - zip -r ../../hapag_comparator_macos.zip hapag_comparator.app
+                - zip -r ../../hapag_comparator_macos_${BITBUCKET_TAG}.zip hapag_comparator.app
               artifacts:
-                - hapag_comparator_macos.zip
+                - hapag_comparator_macos_*.zip
+
+      # ---------------------------------------------------
+      # 4. UPLOAD TO BITBUCKET DOWNLOADS
+      # ---------------------------------------------------
+      - step:
+          name: Upload Artifacts to Downloads
+          script:
+            - pipe: atlassian/bitbucket-upload-file:0.3.2
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                FILENAME: 'hapag_comparator_linux_${BITBUCKET_TAG}.tar.gz'
+            - pipe: atlassian/bitbucket-upload-file:0.3.2
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                FILENAME: 'hapag_comparator_windows_${BITBUCKET_TAG}.zip'
+            - pipe: atlassian/bitbucket-upload-file:0.3.2
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                FILENAME: 'hapag_comparator_macos_${BITBUCKET_TAG}.zip'

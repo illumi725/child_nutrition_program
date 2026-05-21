@@ -17,9 +17,18 @@ class UpdateCheckThread(QThread):
     up_to_date = Signal()
     error_occurred = Signal(str)
 
+    # Bitbucket workspace and repo details
+    BITBUCKET_WORKSPACE = "asa-projects"
+    BITBUCKET_REPO = "cnp_desktop_app"
+
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.api_url = "https://api.github.com/repos/illumi725/child_nutrition_program/releases/latest"
+        # Bitbucket tags API — sorted descending so the first result is the latest tag
+        self.api_url = (
+            f"https://api.bitbucket.org/2.0/repositories/"
+            f"{self.BITBUCKET_WORKSPACE}/{self.BITBUCKET_REPO}/refs/tags"
+            f"?sort=-name&pagelen=1"
+        )
         
     def _parse_version(self, version_str):
         """Extracts integers from a version string like 'v1.0.5' for comparison."""
@@ -32,7 +41,12 @@ class UpdateCheckThread(QThread):
             response = requests.get(self.api_url, timeout=5)
             if response.status_code == 200:
                 data = response.json()
-                latest_tag = data.get("tag_name", "")
+                values = data.get("values", [])
+                if not values:
+                    self.up_to_date.emit()
+                    return
+
+                latest_tag = values[0].get("name", "")
                 
                 # Simple version comparison
                 current_parts = self._parse_version(APP_VERSION)
@@ -40,23 +54,32 @@ class UpdateCheckThread(QThread):
                 
                 # If parsed parts exist and latest is greater than current
                 if current_parts and latest_parts and latest_parts > current_parts:
-                    body = data.get("body", "No release notes provided.")
-                    html_url = data.get("html_url", "")
+                    # Bitbucket doesn't have release notes via tags API — use a generic message
+                    body = "A new version is available. Please update to get the latest fixes and improvements."
+                    html_url = (
+                        f"https://bitbucket.org/{self.BITBUCKET_WORKSPACE}/"
+                        f"{self.BITBUCKET_REPO}/downloads"
+                    )
                     
                     # Format platform-specific download zip URL based on OS
+                    # These files are uploaded to Bitbucket Downloads by the CI/CD pipeline
                     tag = latest_tag
+                    base_url = (
+                        f"https://api.bitbucket.org/2.0/repositories/"
+                        f"{self.BITBUCKET_WORKSPACE}/{self.BITBUCKET_REPO}/downloads"
+                    )
                     if sys.platform.startswith('win32'):
-                        download_url = f"https://github.com/illumi725/child_nutrition_program/releases/download/{tag}/hapag-comparator-windows.zip"
+                        download_url = f"{base_url}/hapag_comparator_windows_{tag}.zip"
                     elif sys.platform.startswith('darwin'):
-                        download_url = f"https://github.com/illumi725/child_nutrition_program/releases/download/{tag}/hapag-comparator-macos.zip"
+                        download_url = f"{base_url}/hapag_comparator_macos_{tag}.zip"
                     else:
-                        download_url = f"https://github.com/illumi725/child_nutrition_program/releases/download/{tag}/hapag-comparator-linux.zip"
+                        download_url = f"{base_url}/hapag_comparator_linux_{tag}.tar.gz"
                         
                     self.update_available.emit(latest_tag, body, html_url, download_url)
                 else:
                     self.up_to_date.emit()
             else:
-                self.error_occurred.emit(f"GitHub API returned {response.status_code}")
+                self.error_occurred.emit(f"Bitbucket API returned {response.status_code}")
         except Exception as e:
             self.error_occurred.emit(str(e))
 
