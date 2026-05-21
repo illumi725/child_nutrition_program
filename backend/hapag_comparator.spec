@@ -42,3 +42,13 @@ coll = COLLECT(
     upx_exclude=[],
     name='hapag_comparator',
 )
+
+import sys
+if sys.platform == 'darwin':
+    app = BUNDLE(
+        coll,
+        name='hapag_comparator.app',
+        icon=None,
+        bundle_identifier='com.illumi725.child-nutrition-program',
+    )
+

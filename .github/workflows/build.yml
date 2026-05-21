@@ -96,11 +96,17 @@ jobs:
           Compress-Archive -Path backend\dist\hapag_comparator\* `
             -DestinationPath hapag_comparator_windows_${{ github.ref_name }}.zip
 
+      - name: Compile Inno Setup Installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=${{ github.ref_name }} backend\scripts\windows_setup.iss
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: hapag_comparator_windows_*.zip
+          path: |
+            hapag_comparator_windows_*.zip
+            backend/dist/hapag_comparator_windows_setup_*.exe
 
   # -----------------------------------------------------------
   # macOS BUILD
@@ -144,11 +150,28 @@ jobs:
           cd backend/dist
           zip -r ../../hapag_comparator_macos_${{ github.ref_name }}.zip hapag_comparator
 
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG Disk Image
+        run: |
+          create-dmg \
+            --volname "Hapag Comparator" \
+            --window-size 500 300 \
+            --icon-size 100 \
+            --icon "hapag_comparator.app" 125 125 \
+            --hide-extension "hapag_comparator.app" \
+            --app-drop-link 375 125 \
+            "hapag_comparator_macos_${{ github.ref_name }}.dmg" \
+            "backend/dist/hapag_comparator.app"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: hapag_comparator_macos_*.zip
+          path: |
+            hapag_comparator_macos_*.zip
+            hapag_comparator_macos_*.dmg
 
   # -----------------------------------------------------------
   # CREATE GITHUB RELEASE & ATTACH ALL ARTIFACTS
@@ -174,4 +197,6 @@ jobs:
           files: |
             hapag_comparator_linux_*.tar.gz
             hapag_comparator_windows_*.zip
+            backend/dist/hapag_comparator_windows_setup_*.exe
             hapag_comparator_macos_*.zip
+            hapag_comparator_macos_*.dmg
