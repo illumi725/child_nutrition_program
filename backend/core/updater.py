@@ -18,8 +18,8 @@ class UpdateCheckThread(QThread):
     error_occurred = Signal(str)
 
     # GitHub repository details
-    GITHUB_OWNER = "asa-projects"
-    GITHUB_REPO  = "cnp_desktop_app"
+    GITHUB_OWNER = "illumi725"
+    GITHUB_REPO  = "child_nutrition_program"
 
     def __init__(self, parent=None):
         super().__init__(parent)
