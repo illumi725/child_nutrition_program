@@ -15,6 +15,8 @@ pipelines:
                 - cd backend
                 - pip install -r requirements.txt
                 - pip install pyinstaller
+                # Inject the secret file from Bitbucket Repository Variable
+                - echo "$CLIENT_SECRETS_JSON" > client_secrets.json
                 - pyinstaller hapag_comparator.spec
                 # Compress the output
                 - tar -czvf ../hapag_comparator_linux.tar.gz -C dist/hapag_comparator .
@@ -34,6 +36,8 @@ pipelines:
                 - cd backend
                 - pip install -r requirements.txt
                 - pip install pyinstaller
+                # Inject the secret file from Bitbucket Repository Variable
+                - $env:CLIENT_SECRETS_JSON | Set-Content -Path client_secrets.json
                 - pyinstaller hapag_comparator.spec
                 # Compress the output using PowerShell
                 - Compress-Archive -Path dist\hapag_comparator\* -DestinationPath ..\hapag_comparator_windows.zip
@@ -53,6 +57,8 @@ pipelines:
                 - cd backend
                 - pip install -r requirements.txt
                 - pip install pyinstaller
+                # Inject the secret file from Bitbucket Repository Variable
+                - echo "$CLIENT_SECRETS_JSON" > client_secrets.json
                 - pyinstaller hapag_comparator.spec
                 # The output for mac is usually an .app bundle. Let's zip it.
                 - cd dist
