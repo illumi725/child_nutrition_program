@@ -1,0 +1,61 @@
+image: python:3.12
+
+pipelines:
+  tags:
+    v*: # Triggers when a tag starting with 'v' is pushed
+      - parallel:
+          # ---------------------------------------------------
+          # 1. LINUX BUILD
+          # ---------------------------------------------------
+          - step:
+              name: Build Linux Executable
+              caches:
+                - pip
+              script:
+                - cd backend
+                - pip install -r requirements.txt
+                - pip install pyinstaller
+                - pyinstaller hapag_comparator.spec
+                # Compress the output
+                - tar -czvf ../hapag_comparator_linux.tar.gz -C dist/hapag_comparator .
+              artifacts:
+                - hapag_comparator_linux.tar.gz
+
+          # ---------------------------------------------------
+          # 2. WINDOWS BUILD
+          # ---------------------------------------------------
+          - step:
+              name: Build Windows Executable
+              runs-on: 
+                - windows
+              caches:
+                - pip
+              script:
+                - cd backend
+                - pip install -r requirements.txt
+                - pip install pyinstaller
+                - pyinstaller hapag_comparator.spec
+                # Compress the output using PowerShell
+                - Compress-Archive -Path dist\hapag_comparator\* -DestinationPath ..\hapag_comparator_windows.zip
+              artifacts:
+                - hapag_comparator_windows.zip
+
+          # ---------------------------------------------------
+          # 3. macOS BUILD
+          # ---------------------------------------------------
+          - step:
+              name: Build macOS Executable
+              runs-on: 
+                - macos
+              caches:
+                - pip
+              script:
+                - cd backend
+                - pip install -r requirements.txt
+                - pip install pyinstaller
+                - pyinstaller hapag_comparator.spec
+                # The output for mac is usually an .app bundle. Let's zip it.
+                - cd dist
+                - zip -r ../../hapag_comparator_macos.zip hapag_comparator.app
+              artifacts:
+                - hapag_comparator_macos.zip
