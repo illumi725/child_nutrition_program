@@ -29,6 +29,7 @@ pipelines:
           - step:
               name: Build Windows Executable
               runs-on: 
+                - self.hosted
                 - windows
               caches:
                 - pip
@@ -50,6 +51,7 @@ pipelines:
           - step:
               name: Build macOS Executable
               runs-on: 
+                - self.hosted
                 - macos
               caches:
                 - pip
