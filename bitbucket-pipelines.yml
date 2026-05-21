@@ -24,52 +24,29 @@ pipelines:
                 - hapag_comparator_linux_*.tar.gz
 
           # ---------------------------------------------------
-          # 2. WINDOWS BUILD
+          # 2. WINDOWS BUILD (Cross-Compiled via Wine)
           # ---------------------------------------------------
           - step:
               name: Build Windows Executable
-              runs-on: 
-                - self.hosted
-                - windows
+              image: tobix/pywine:3.12
               caches:
                 - pip
               script:
                 - cd backend
-                - pip install -r requirements.txt
-                - pip install pyinstaller
-                - $env:CLIENT_SECRETS_JSON | Out-File -FilePath client_secrets.json -Encoding utf8
-                - $env:APP_VERSION_TAG = $env:BITBUCKET_TAG
-                - python scripts/inject_config.py
-                - pyinstaller hapag_comparator.spec
-                - Compress-Archive -Path dist\hapag_comparator\* -DestinationPath ..\hapag_comparator_windows_${env:BITBUCKET_TAG}.zip
+                # Install dependencies in the Wine Windows environment
+                - wine python -m pip install -r requirements.txt
+                - wine python -m pip install pyinstaller
+                - echo "$CLIENT_SECRETS_JSON" > client_secrets.json
+                - export APP_VERSION_TAG=$BITBUCKET_TAG
+                - wine python scripts/inject_config.py
+                - wine pyinstaller hapag_comparator.spec
+                # Compress the output using Python's built-in zip module
+                - wine python -m zipfile -c ../hapag_comparator_windows_${BITBUCKET_TAG}.zip dist/hapag_comparator/
               artifacts:
                 - hapag_comparator_windows_*.zip
 
-          # ---------------------------------------------------
-          # 3. macOS BUILD
-          # ---------------------------------------------------
-          - step:
-              name: Build macOS Executable
-              runs-on: 
-                - self.hosted
-                - macos
-              caches:
-                - pip
-              script:
-                - cd backend
-                - pip install -r requirements.txt
-                - pip install pyinstaller
-                - echo "$CLIENT_SECRETS_JSON" > client_secrets.json
-                - export APP_VERSION_TAG=$BITBUCKET_TAG
-                - python scripts/inject_config.py
-                - pyinstaller hapag_comparator.spec
-                - cd dist
-                - zip -r ../../hapag_comparator_macos_${BITBUCKET_TAG}.zip hapag_comparator.app
-              artifacts:
-                - hapag_comparator_macos_*.zip
-
       # ---------------------------------------------------
-      # 4. UPLOAD TO BITBUCKET DOWNLOADS
+      # 3. UPLOAD TO BITBUCKET DOWNLOADS
       # ---------------------------------------------------
       - step:
           name: Upload Artifacts to Downloads
@@ -84,8 +61,3 @@ pipelines:
                 BITBUCKET_USERNAME: $BITBUCKET_USERNAME
                 BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
                 FILENAME: 'hapag_comparator_windows_${BITBUCKET_TAG}.zip'
-            - pipe: atlassian/bitbucket-upload-file:0.3.2
-              variables:
-                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
-                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
-                FILENAME: 'hapag_comparator_macos_${BITBUCKET_TAG}.zip'
