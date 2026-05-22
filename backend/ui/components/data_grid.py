@@ -1,5 +1,9 @@
+import logging
+
 from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QWidget, QHBoxLayout, QPushButton, QAbstractItemView
 from PySide6.QtCore import Qt, Signal
+
+logger = logging.getLogger(__name__)
 
 class ActionWidget(QWidget):
     sync_clicked = Signal(dict, QWidget)
@@ -253,7 +257,8 @@ class ResultsDataGrid(QTableWidget):
                 if 'getter' in col:
                     try:
                         val = col['getter'](record)
-                    except:
+                    except Exception as exc:
+                        logger.debug("column getter failed for %s: %s", col.get('key'), exc)
                         val = ""
                 else:
                     # Fetch nested keys like 'excel.lastname'

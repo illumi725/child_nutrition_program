@@ -1,8 +1,11 @@
 """
 SyncEngine: bidirectional synchronization between cloud MySQL and local SQLite.
 """
+import logging
 import sqlite3
 import datetime
+
+logger = logging.getLogger(__name__)
 from PySide6.QtCore import QThread, Signal
 
 ALL_TABLES = [
@@ -76,7 +79,7 @@ def _replicate_indexes(cloud, local: sqlite3.Connection, table: str):
             c.execute(f"SHOW INDEX FROM `{table}`")
             indexes = c.fetchall()
     except Exception as e:
-        print(f"[REPLICATE-INDEX-ERROR] Could not fetch indexes for {table}: {e}")
+        logger.warning("Could not fetch indexes for %s: %s", table, e)
         return
 
     index_defs = {}
@@ -103,7 +106,7 @@ def _replicate_indexes(cloud, local: sqlite3.Connection, table: str):
         try:
             local.execute(ddl)
         except Exception as e:
-            print(f"[REPLICATE-INDEX-ERROR] Failed to execute: {ddl}. Error: {e}")
+            logger.warning("Failed to execute index DDL %s: %s", ddl, e)
     local.commit()
 
 def _create_sqlite_table_from_mysql(cloud, local: sqlite3.Connection, table: str):

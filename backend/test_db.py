@@ -1,21 +1,29 @@
-import sys
-import os
+"""Ad-hoc local DB inspection script (development only)."""
 
-# add backend path to sys.path
+import logging
+import os
+import sqlite3
+import sys
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from core.app_settings import get_local_db_path
-db_path = get_local_db_path()
 
-import sqlite3
+db_path = get_local_db_path()
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 cursor.execute("SELECT * FROM beneficiaries WHERE lastname LIKE '%Abacahin%'")
 ben = cursor.fetchone()
-print("Beneficiary:", ben)
+logger.info("Beneficiary: %s", ben)
 
 if ben:
-    # Print baseline_info
-    cursor.execute("SELECT weight, height, age FROM baseline_info WHERE beneficiary_id=?", (ben[0],))
+    cursor.execute(
+        "SELECT weight, height, age FROM baseline_info WHERE beneficiary_id=?",
+        (ben[0],),
+    )
     bl = cursor.fetchall()
-    print("Baseline:", bl)
+    logger.info("Baseline: %s", bl)
+conn.close()

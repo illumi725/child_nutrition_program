@@ -1,5 +1,8 @@
 import json
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -332,7 +335,7 @@ class DashboardWindow(QDialog):
             self._apply_stats(stats, from_cache=True)
             return True
         except Exception as e:
-            print(f"[CACHE-LOAD] {e}")
+            logger.warning("Dashboard cache load failed: %s", e)
             return False
 
     def _apply_stats(self, stats, from_cache=False):

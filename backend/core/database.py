@@ -3,8 +3,41 @@ import sys
 import sqlite3
 import pymysql
 import datetime
+import logging
 from decimal import Decimal
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
+
+SITES_QUERY = """
+    SELECT s.site_id, s.site_name, s.batch, br.barangay_name, cm.citymun_name, p.province_name
+    FROM sites s
+    LEFT JOIN barangays br ON s.barangay_code = br.barangay_code
+    LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code
+    LEFT JOIN provinces p ON s.province_code = p.province_code
+    ORDER BY s.site_name
+"""
+
+BENEFICIARIES_BASE_QUERY = """
+    SELECT
+        b.beneficiary_id, b.lastname, b.firstname, b.middlename, b.birthday, b.gender, b.site_id,
+        s.site_name, s.batch, br.barangay_name, cm.citymun_name, p.province_name,
+        bl.weight, bl.height, bl.age, bl.date_collected,
+        bl.bmifa_status, bl.bmifa_figure, bl.wfa_status, bl.wfa_figure,
+        bl.hfa_status, bl.hfa_figure, bl.wfh_status, bl.wfh_figure
+    FROM beneficiaries b
+    LEFT JOIN sites s ON b.site_id = s.site_id
+    LEFT JOIN barangays br ON s.barangay_code = br.barangay_code
+    LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code
+    LEFT JOIN provinces p ON s.province_code = p.province_code
+    LEFT JOIN (
+        SELECT beneficiary_id, MAX(created_at) AS max_created
+        FROM baseline_info
+        GROUP BY beneficiary_id
+    ) latest ON latest.beneficiary_id = b.beneficiary_id
+    LEFT JOIN baseline_info bl ON bl.beneficiary_id = b.beneficiary_id
+        AND bl.created_at = latest.max_created
+"""
 
 # Register adapter for decimal.Decimal to work seamlessly with SQLite
 sqlite3.register_adapter(Decimal, str)
@@ -48,7 +81,7 @@ def _get_local_connection():
         return d
         
     conn.row_factory = dict_factory
-    conn.execute("PRAGMA foreign_keys=OFF")
+    conn.execute("PRAGMA foreign_keys=ON")
     
     # Auto-create crucial SQLite indexes for local query optimization
     try:
@@ -62,7 +95,7 @@ def _get_local_connection():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_provinces_province_code ON provinces(province_code)")
         conn.commit()
     except Exception as e:
-        print(f"[INDEX-SETUP-WARNING] {e}")
+        logger.warning("SQLite index setup: %s", e)
         
     return SQLiteConnectionWrapper(conn)
 
@@ -121,33 +154,19 @@ class SQLiteConnectionWrapper:
         self._conn.close()
 
 
-def fetch_beneficiaries() -> List[Dict[str, Any]]:
+def fetch_beneficiaries(site_id: Optional[str] = None) -> List[Dict[str, Any]]:
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql = """
-            SELECT 
-                b.beneficiary_id, b.lastname, b.firstname, b.middlename, b.birthday, b.gender, b.site_id,
-                s.site_name, s.batch, br.barangay_name, cm.citymun_name, p.province_name,
-                (SELECT weight FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as weight,
-                (SELECT height FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as height,
-                (SELECT age FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as age,
-                (SELECT date_collected FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as date_collected,
-                (SELECT bmifa_status FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as bmifa_status,
-                (SELECT bmifa_figure FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as bmifa_figure,
-                (SELECT wfa_status FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as wfa_status,
-                (SELECT wfa_figure FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as wfa_figure,
-                (SELECT hfa_status FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as hfa_status,
-                (SELECT hfa_figure FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as hfa_figure,
-                (SELECT wfh_status FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as wfh_status,
-                (SELECT wfh_figure FROM baseline_info bl WHERE bl.beneficiary_id = b.beneficiary_id ORDER BY created_at DESC LIMIT 1) as wfh_figure
-            FROM beneficiaries b
-            LEFT JOIN sites s ON b.site_id = s.site_id
-            LEFT JOIN barangays br ON s.barangay_code = br.barangay_code
-            LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code
-            LEFT JOIN provinces p ON s.province_code = p.province_code
-            """
-            cursor.execute(sql)
+            sql = BENEFICIARIES_BASE_QUERY
+            args = None
+            if site_id:
+                sql += " WHERE b.site_id = %s"
+                args = (site_id,)
+            if args:
+                cursor.execute(sql, args)
+            else:
+                cursor.execute(sql)
             rows = cursor.fetchall()
             for r in rows:
                 if isinstance(r.get('weight'), Decimal): r['weight'] = float(r['weight'])
@@ -163,16 +182,14 @@ def get_sites():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT s.site_id, s.site_name, s.batch, br.barangay_name, cm.citymun_name, p.province_name 
-                FROM sites s
-                LEFT JOIN barangays br ON s.barangay_code = br.barangay_code
-                LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code
-                LEFT JOIN provinces p ON s.province_code = p.province_code
-                ORDER BY s.site_name
-            """)
+            cursor.execute(SITES_QUERY)
             return cursor.fetchall()
     finally: conn.close()
+
+
+def fetch_sites_cache():
+    """Sites list for Excel parsing (shared with workers)."""
+    return get_sites()
 
 def sync_baseline(beneficiary_id, weight, height, date_collected, birthday):
     conn = get_db_connection()
@@ -190,12 +207,13 @@ def sync_baseline(beneficiary_id, weight, height, date_collected, birthday):
             ref_date = datetime.date.today()
             if date_collected:
                 try: ref_date = datetime.datetime.strptime(date_collected, '%Y-%m-%d').date()
-                except: pass
+                except (ValueError, TypeError):
+                    pass
             
             # Use the resolved birthday from DB (in case birthday param was None)
             resolved_birthday = birthday or (str(ben.get('birthday', '')) if ben.get('birthday') else None)
             if not resolved_birthday:
-                print(f"[SYNC-ERROR] No birthday available for beneficiary_id={beneficiary_id}")
+                logger.error("sync_baseline: no birthday for beneficiary_id=%s", beneficiary_id)
                 return False
             
             bday_dt = datetime.datetime.strptime(resolved_birthday, '%Y-%m-%d').date()
@@ -258,7 +276,7 @@ def sync_baseline(beneficiary_id, weight, height, date_collected, birthday):
             conn.commit()
             return True
     except Exception as e:
-        print(f"[SYNC-ERROR] {e}")
+        logger.error("sync_baseline failed: %s", e, exc_info=True)
         return False
     finally: conn.close()
 
@@ -282,8 +300,10 @@ def update_birthday_db(beneficiary_id, new_birthday):
             if item and item.get('weight') and item.get('height'):
                 ref_date = datetime.date.today()
                 if item.get('date_collected'):
-                    try: ref_date = datetime.datetime.strptime(item['date_collected'], '%Y-%m-%d').date()
-                    except: pass
+                    try:
+                        ref_date = datetime.datetime.strptime(item['date_collected'], '%Y-%m-%d').date()
+                    except (ValueError, TypeError):
+                        pass
                 
                 bday_dt = datetime.datetime.strptime(new_birthday, '%Y-%m-%d').date()
                 age_in_months = (ref_date.year - bday_dt.year) * 12 + ref_date.month - bday_dt.month
@@ -318,7 +338,7 @@ def update_birthday_db(beneficiary_id, new_birthday):
             conn.commit()
             return True
     except Exception as e:
-        print(f"[BDAY-SYNC-ERROR] {e}")
+        logger.error("update_birthday_db failed: %s", e, exc_info=True)
         return False
     finally: conn.close()
 
@@ -334,7 +354,7 @@ def update_name_db(beneficiary_id, lastname, firstname, middlename):
             conn.commit()
             return True
     except Exception as e:
-        print(f"[NAME-SYNC-ERROR] {e}")
+        logger.error("update_name_db failed: %s", e, exc_info=True)
         return False
     finally: conn.close()
 
@@ -355,37 +375,67 @@ def get_surname_dictionary():
             for row in cursor.fetchall():
                 surnames.add(row['middlename'].strip().upper())
     except Exception as e:
-        print(f"[SURNAME-DICT-ERROR] {e}")
+        logger.error("get_surname_dictionary failed: %s", e, exc_info=True)
     finally:
         conn.close()
     return surnames
 
-def generate_beneficiary_id():
+def _random_beneficiary_id():
     import random
     import string
-    return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=10))
+
+
+def generate_beneficiary_id(cursor=None, max_attempts: int = 10) -> str:
+    if cursor is None:
+        for _ in range(max_attempts):
+            bid = _random_beneficiary_id()
+            conn = get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT 1 FROM beneficiaries WHERE beneficiary_id = %s LIMIT 1",
+                        (bid,),
+                    )
+                    if not cur.fetchone():
+                        return bid
+            finally:
+                conn.close()
+        raise RuntimeError("Could not generate unique beneficiary_id")
+
+    for _ in range(max_attempts):
+        bid = _random_beneficiary_id()
+        cursor.execute(
+            "SELECT 1 FROM beneficiaries WHERE beneficiary_id = %s LIMIT 1",
+            (bid,),
+        )
+        if not cursor.fetchone():
+            return bid
+    raise RuntimeError("Could not generate unique beneficiary_id")
 
 def authenticate_user(access_code, email=None):
     try:
         conn = get_db_connection()
     except FileNotFoundError:
         conn = _get_cloud_connection()
-        
+
     try:
         with conn.cursor() as cursor:
             if email:
                 cursor.execute(
-                    "SELECT user_id, firstname, lastname, role, email FROM users WHERE access_code = %s AND email = %s AND deleted_at IS NULL",
-                    (access_code, email)
+                    "SELECT user_id, firstname, lastname, role, email FROM users "
+                    "WHERE access_code = %s AND email = %s AND deleted_at IS NULL",
+                    (access_code, email),
                 )
             else:
                 cursor.execute(
-                    "SELECT user_id, firstname, lastname, role, email FROM users WHERE access_code = %s AND deleted_at IS NULL",
-                    (access_code,)
+                    "SELECT user_id, firstname, lastname, role, email FROM users "
+                    "WHERE access_code = %s AND deleted_at IS NULL",
+                    (access_code,),
                 )
             return cursor.fetchone()
     except Exception as e:
-        print(f"[AUTH-ERROR] {e}")
+        logger.error("authenticate_user failed: %s", e, exc_info=True)
         return None
     finally:
         conn.close()
@@ -401,7 +451,7 @@ def check_email_exists(email):
             cursor.execute("SELECT user_id FROM users WHERE email = %s AND deleted_at IS NULL", (email,))
             return cursor.fetchone() is not None
     except Exception as e:
-        print(f"[AUTH-ERROR] {e}")
+        logger.error("check_email_exists failed: %s", e, exc_info=True)
         return False
     finally:
         conn.close()
@@ -410,7 +460,7 @@ def add_beneficiary_to_db(site_id, lastname, firstname, middlename, birthday, ge
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            beneficiary_id = generate_beneficiary_id()
+            beneficiary_id = generate_beneficiary_id(cursor)
             reg_date = datetime.date.today().strftime('%Y-%m-%d')
 
             
@@ -425,8 +475,10 @@ def add_beneficiary_to_db(site_id, lastname, firstname, middlename, birthday, ge
             if weight and height:
                 ref_date = datetime.date.today()
                 if date_collected:
-                    try: ref_date = datetime.datetime.strptime(date_collected, '%Y-%m-%d').date()
-                    except: pass
+                    try:
+                        ref_date = datetime.datetime.strptime(date_collected, '%Y-%m-%d').date()
+                    except (ValueError, TypeError):
+                        pass
                 
                 bday_dt = datetime.datetime.strptime(birthday, '%Y-%m-%d').date()
                 age_in_months = (ref_date.year - bday_dt.year) * 12 + ref_date.month - bday_dt.month
@@ -438,7 +490,7 @@ def add_beneficiary_to_db(site_id, lastname, firstname, middlename, birthday, ge
                     
                 stats = calculate_anthro_stats(age_in_months, gender.upper(), weight, height)
                 
-                info_id = generate_beneficiary_id()
+                info_id = generate_beneficiary_id(cursor)
                 sql_bl = """
                 INSERT INTO baseline_info (
                     info_id, beneficiary_id, gender, weight, height, age, date_collected,
@@ -459,7 +511,7 @@ def add_beneficiary_to_db(site_id, lastname, firstname, middlename, birthday, ge
             conn.commit()
             return True, beneficiary_id
     except Exception as e:
-        print(f"[ADD-BENEFICIARY-ERROR] {e}")
+        logger.error("add_beneficiary_to_db failed: %s", e, exc_info=True)
         return False, str(e)
     finally:
         conn.close()
@@ -505,7 +557,7 @@ def delete_beneficiary_cascade(beneficiary_id):
                 try:
                     cursor.execute(f"DELETE FROM `{table}` WHERE beneficiary_id = %s", (beneficiary_id,))
                 except Exception as e:
-                    print(f"[CASCADE-DELETE] Warning on {table}: {e}")
+                    logger.warning("cascade delete on %s: %s", table, e)
             cursor.execute("DELETE FROM beneficiaries WHERE beneficiary_id = %s", (beneficiary_id,))
         conn.commit()
         return True, None
@@ -565,7 +617,7 @@ def bulk_transfer_beneficiaries(beneficiary_ids: list, target_site_id: str) -> t
         return True, None
     except Exception as e:
         conn.rollback()
-        print(f"[BULK-TRANSFER-ERROR] {e}")
+        logger.error("bulk_transfer_beneficiaries failed: %s", e, exc_info=True)
         return False, str(e)
     finally:
         conn.close()

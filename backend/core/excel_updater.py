@@ -1,5 +1,8 @@
+import logging
 import openpyxl
 import os
+
+logger = logging.getLogger(__name__)
 
 def update_excel_birthday(file_path: str, row_number: int, new_birthday_str: str) -> bool:
     """
@@ -7,7 +10,7 @@ def update_excel_birthday(file_path: str, row_number: int, new_birthday_str: str
     Row numbers here should correspond to the 1-based index in Excel.
     """
     if not os.path.exists(file_path):
-        print(f"[EXCEL-UPDATE-ERROR] File not found: {file_path}")
+        logger.error("Excel file not found: %s", file_path)
         return False
         
     try:
@@ -42,7 +45,7 @@ def update_excel_birthday(file_path: str, row_number: int, new_birthday_str: str
                 break
                 
         if birthday_col_idx == -1:
-            print(f"[EXCEL-UPDATE-ERROR] Could not locate Birthday column in {file_path}")
+            logger.error("Could not locate Birthday column in %s", file_path)
             return False
             
         # Update the cell
@@ -53,7 +56,7 @@ def update_excel_birthday(file_path: str, row_number: int, new_birthday_str: str
         return True
         
     except Exception as e:
-        print(f"[EXCEL-UPDATE-ERROR] Failed to update {file_path}: {e}")
+        logger.error("Failed to update birthday in %s: %s", file_path, e, exc_info=True)
         return False
 
 def update_excel_name(file_path: str, row_number: int, new_name_str: str) -> bool:
@@ -89,7 +92,7 @@ def update_excel_name(file_path: str, row_number: int, new_name_str: str) -> boo
         return True
         
     except Exception as e:
-        print(f"[EXCEL-UPDATE-ERROR] Failed to update name in {file_path}: {e}")
+        logger.error("Failed to update name in %s: %s", file_path, e, exc_info=True)
         return False
 
 

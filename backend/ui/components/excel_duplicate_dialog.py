@@ -1,6 +1,5 @@
 import os
 import sys
-from datetime import datetime
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
@@ -9,15 +8,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 
-
-def format_display_date(date_val):
-    if not date_val: return ""
-    date_str = str(date_val).strip()
-    try:
-        dt = datetime.strptime(date_str, '%Y-%m-%d')
-        return dt.strftime('%B %d, %Y')
-    except:
-        return date_str
+from ui.format_utils import format_display_date
 
 
 def _interfile_cache_path():
@@ -50,6 +41,7 @@ class ExcelDuplicateDialog(QDialog):
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
 
         self.setup_ui()
+        self._apply_delete_permission()
         self.populate_table()
 
         # Center Dialog perfectly relative to parent window or screen
@@ -65,6 +57,16 @@ class ExcelDuplicateDialog(QDialog):
                 screen.x() + (screen.width() - self.width()) // 2,
                 screen.y() + (screen.height() - self.height()) // 2
             )
+
+    def _current_user(self):
+        p = self.parent()
+        return getattr(p, "current_user", None) if p else None
+
+    def _apply_delete_permission(self):
+        from ui.auth_guard import user_has_permission
+        if not user_has_permission(self._current_user(), "delete_excel_row"):
+            self.btn_delete.setVisible(False)
+            self.btn_delete.setEnabled(False)
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
@@ -204,6 +206,9 @@ class ExcelDuplicateDialog(QDialog):
             self.lbl_status.setStyleSheet("color: #2980b9; font-size: 11px;")
 
     def on_delete(self):
+        from ui.auth_guard import require_permission
+        if not require_permission(self, self._current_user(), "delete_excel_row"):
+            return
         selected_indices = [i for i, chk in enumerate(self.checkboxes) if chk.isChecked()]
         if not selected_indices:
             return

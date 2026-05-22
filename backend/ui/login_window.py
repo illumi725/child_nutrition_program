@@ -1,3 +1,4 @@
+import logging
 import sys
 import os
 from PySide6.QtWidgets import (
@@ -7,18 +8,16 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QThread
 from PySide6.QtGui import QFont
 
+logger = logging.getLogger(__name__)
+
+
 class GoogleLoginThread(QThread):
     finished_auth = Signal(str, str) # email, error_message
     open_browser = Signal(str) # url
     
     def log_debug(self, msg):
-        import traceback, datetime
-        try:
-            log_path = os.path.expanduser("~/hapag_auth_debug.log")
-            with open(log_path, "a") as f:
-                f.write(f"{datetime.datetime.now().isoformat()} - {msg}\n")
-        except:
-            pass
+        from ui.auth_debug import auth_debug_log
+        auth_debug_log(msg)
 
     def run(self):
         self.log_debug("--- Starting Google Login Thread ---")
@@ -373,13 +372,8 @@ class LoginWindow(QWidget):
     def on_sso_browser_finished(self, result):
         self.sso_browser = None
         if self.btn_google.text() == "Waiting for browser...":
-            try:
-                import datetime
-                log_path = os.path.expanduser("~/hapag_auth_debug.log")
-                with open(log_path, "a") as f:
-                    f.write(f"{datetime.datetime.now().isoformat()} - [UI] SSO Browser closed manually by the user\n")
-            except:
-                pass
+            from ui.auth_debug import auth_debug_log
+            auth_debug_log("[UI] SSO Browser closed manually by the user")
             
             self.lbl_subtitle.setText("Sign-in cancelled.")
             self.lbl_subtitle.setStyleSheet("color: #e74c3c; font-size: 12px;")
@@ -392,21 +386,17 @@ class LoginWindow(QWidget):
                     try:
                         import requests
                         requests.get(f"http://localhost:{port}/?error=cancelled", timeout=2)
-                    except:
-                        pass
+                    except OSError as exc:
+                        logger.debug("SSO cancel shutdown request failed: %s", exc)
                 import threading
                 threading.Thread(target=shutdown_server, daemon=True).start()
 
     def on_google_auth_finished(self, email, error_msg):
+        from ui.auth_debug import auth_debug_log
+
         def log_ui(msg):
-            try:
-                import datetime
-                log_path = os.path.expanduser("~/hapag_auth_debug.log")
-                with open(log_path, "a") as f:
-                    f.write(f"{datetime.datetime.now().isoformat()} - [UI] {msg}\n")
-            except:
-                pass
-                
+            auth_debug_log(f"[UI] {msg}")
+
         log_ui(f"on_google_auth_finished called. email: {email}, error_msg: {error_msg}")
         
         # Close immediately on error, or show a 3-second countdown on successful login
@@ -415,14 +405,14 @@ class LoginWindow(QWidget):
                 # Disconnect standard finished signal to prevent trigger overlap
                 try:
                     self.sso_browser.finished.disconnect(self.on_sso_browser_finished)
-                except:
+                except (RuntimeError, TypeError):
                     pass
                 
                 browser_ref = self.sso_browser
                 def close_and_cleanup():
                     try:
                         browser_ref.close()
-                    except:
+                    except RuntimeError:
                         pass
                 browser_ref.show_success_screen(email, close_and_cleanup)
                 self.sso_browser = None
@@ -430,7 +420,7 @@ class LoginWindow(QWidget):
                 try:
                     self.sso_browser.blockSignals(True)
                     self.sso_browser.close()
-                except:
+                except RuntimeError:
                     pass
                 self.sso_browser = None
         
@@ -615,9 +605,23 @@ class LoginWindow(QWidget):
         QApplication.processEvents()
         
         from core.database import authenticate_user
+        from core.permissions import is_app_access_allowed, normalize_role
+
         user = authenticate_user(code, self.authorized_email)
-        
+
         if user:
+            if not is_app_access_allowed(user.get("role")):
+                role_label = user.get("role", "Unknown")
+                QMessageBox.warning(
+                    self,
+                    "Access Not Allowed",
+                    f"Your role ({role_label}) is not permitted to use the HAPAG Form 5A Comparator.\n\n"
+                    "This application is for ADMIN, PM, and PO users only.\n"
+                    "FPA accounts cannot sign in.",
+                )
+                self.btn_login.setEnabled(True)
+                self.btn_login.setText(" Verify and Login")
+                return
             self.login_successful.emit(user)
             self.close()
         else:

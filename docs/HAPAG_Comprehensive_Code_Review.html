@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Comprehensive Code Review — HAPAG Form 5A Comparator</title>
+  <style>
+    @page { margin: 2cm; }
+    body {
+      font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #1a1a1a;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+    h1 { font-size: 22pt; color: #0d47a1; border-bottom: 3px solid #0d47a1; padding-bottom: 8px; margin-top: 0; }
+    h2 { font-size: 15pt; color: #1565c0; margin-top: 28px; page-break-after: avoid; }
+    h3 { font-size: 12pt; color: #333; margin-top: 18px; page-break-after: avoid; }
+    h4 { font-size: 11pt; color: #555; margin-top: 14px; }
+    .meta { color: #555; font-size: 10pt; margin-bottom: 24px; }
+    .meta strong { color: #333; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 10pt; page-break-inside: avoid; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #e3f2fd; font-weight: 600; }
+    tr:nth-child(even) td { background: #fafafa; }
+    code, pre {
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 9pt;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+    }
+    pre { padding: 10px 12px; overflow-x: auto; white-space: pre-wrap; page-break-inside: avoid; }
+    code { padding: 1px 4px; }
+    ul, ol { margin: 8px 0 12px; padding-left: 22px; }
+    li { margin-bottom: 4px; }
+    .rating-good { color: #2e7d32; font-weight: 600; }
+    .rating-fair { color: #f57c00; font-weight: 600; }
+    .rating-poor { color: #c62828; font-weight: 600; }
+    .box { background: #fff8e1; border-left: 4px solid #ffa000; padding: 10px 14px; margin: 14px 0; }
+    .diagram { background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; font-family: monospace; font-size: 9pt; white-space: pre; page-break-inside: avoid; }
+    .page-break { page-break-before: always; }
+    .toc a { color: #1565c0; text-decoration: none; }
+    .footer-note { font-size: 9pt; color: #777; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 12px; }
+  </style>
+</head>
+<body>
+
+<h1>Comprehensive Code Review</h1>
+<h2 style="margin-top:0;border:none;color:#333;font-size:16pt;">HAPAG Form 5A Comparator</h2>
+
+<p class="meta">
+  <strong>Project:</strong> HAPAG Registration &amp; Baseline Diagnostics (desktop)<br>
+  <strong>Repository:</strong> HAPAG APPROVED BASELINE-20260410T035243Z-3-001<br>
+  <strong>Version context:</strong> Tagged releases through v1.3.2; ~26 Python modules under backend/<br>
+  <strong>Review date:</strong> May 22, 2026<br>
+  <strong>Scope:</strong> Full application codebase, CI/CD, dependencies, BRD alignment, operational posture
+</p>
+
+<h2>Table of Contents</h2>
+<ol class="toc">
+  <li><a href="#executive">Executive Summary</a></li>
+  <li><a href="#overview">Project Overview</a></li>
+  <li><a href="#strengths">Strengths</a></li>
+  <li><a href="#findings">Critical &amp; High-Priority Findings</a></li>
+  <li><a href="#recommendations">Detailed Recommendations</a></li>
+  <li><a href="#roadmap">Implementation Roadmap</a></li>
+  <li><a href="#ci">CI/CD Quick Wins</a></li>
+  <li><a href="#conclusion">Conclusion</a></li>
+</ol>
+
+<h2 id="executive">1. Executive Summary</h2>
+<p>
+  This is a <strong>mature, feature-rich PySide6 desktop application</strong> that delivers real business value:
+  Excel Form 5A parsing, fuzzy matching against a child nutrition database, baseline sync, duplicate management,
+  cloud/local DB modes, Google OAuth, and cross-platform auto-update with native installers (Windows .exe,
+  macOS .dmg, Linux tarball).
+</p>
+<p>
+  The codebase is <strong>functionally strong</strong> but shows signs of rapid delivery pressure: a ~1,300-line main window,
+  print-based diagnostics, no automated test suite, and several security and reliability gaps that should be addressed
+  before wider field deployment.
+</p>
+
+<table>
+  <thead>
+    <tr><th>Area</th><th>Rating</th><th>Summary</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Functionality / BRD fit</td><td class="rating-good">Good</td><td>Core workflows match BRD; role-based access is documented but not enforced</td></tr>
+    <tr><td>Architecture</td><td class="rating-fair">Fair</td><td>Clear core/ vs ui/ split; UI layer is overloaded</td></tr>
+    <tr><td>Security</td><td class="rating-fair">Needs work</td><td>Auto-update zip handling, plaintext credentials, weak access-code model</td></tr>
+    <tr><td>Code quality</td><td class="rating-fair">Fair</td><td>Parameterized SQL is consistent; bare except and ignored return values are widespread</td></tr>
+    <tr><td>Testing</td><td class="rating-poor">Poor</td><td>No pytest/unittest; only ad-hoc scratch scripts</td></tr>
+    <tr><td>CI/CD</td><td class="rating-good">Good (build)</td><td>Multi-platform PyInstaller + GitHub Releases; no test/lint gates</td></tr>
+    <tr><td>Maintainability</td><td class="rating-fair">Fair</td><td>Duplicated SQL/match logic; unused dependencies bloat the stack</td></tr>
+  </tbody>
+</table>
+
+<h2 id="overview">2. Project Overview</h2>
+
+<h3>2.1 Purpose</h3>
+<p>
+  Per BRD.md, the app automates reconciliation between <strong>local Form 5A Excel files</strong> and the
+  <strong>central child nutrition database</strong>, categorizing exact/fuzzy matches, discrepancies, missing records,
+  and duplicates, then supporting sync and resolution actions.
+</p>
+
+<h3>2.2 Architecture</h3>
+<div class="diagram">app.py (entry)
+  └── LoginWindow (Google OAuth + access code)
+        └── MainWindow (~1,296 lines)
+              ├── FileExplorer + ScanWorker
+              ├── Results tabs (exact / fuzzy / missing / duplicates)
+              ├── DashboardWindow + GlobalStatsWorker
+              ├── SearchBeneficiaryWindow, BulkTransferWindow
+              └── SettingsDialog → SyncWorker (cloud ↔ local SQLite)
+
+core/
+  database.py    — MySQL (cloud) or SQLite (local), CRUD
+  parser.py      — Excel Form 5A parsing + fuzzy matching
+  sync_engine.py — Full replicate + delta sync (27 tables)
+  updater.py     — GitHub release check + zip download
+  app_settings.py — JSON in OS AppData
+ui/workers.py    — Scan + global stats + inter-file index cache
+anthro_utils.py  — WHO LMS z-scores from JSON</div>
+
+<h3>2.3 Module Map</h3>
+<table>
+  <thead><tr><th>Module</th><th>Responsibility</th></tr></thead>
+  <tbody>
+    <tr><td>app.py</td><td>Qt app bootstrap, theme, login → main window</td></tr>
+    <tr><td>ui/main_window.py</td><td>Scan orchestration, tabs, sync/delete/update, auto-update install</td></tr>
+    <tr><td>ui/workers.py</td><td>Background scan, global stats, inter-file index cache</td></tr>
+    <tr><td>ui/login_window.py</td><td>Google OAuth + access-code gate</td></tr>
+    <tr><td>core/parser.py</td><td>Name splitting, Excel parse, fuzzy scoring</td></tr>
+    <tr><td>core/database.py</td><td>Cloud/local connections, CRUD, auth, cascade delete</td></tr>
+    <tr><td>core/sync_engine.py</td><td>Full replication + delta sync (27 tables)</td></tr>
+    <tr><td>core/updater.py</td><td>GitHub release check + zip download/extract</td></tr>
+    <tr><td>core/excel_updater.py</td><td>In-place Excel row updates/deletes</td></tr>
+    <tr><td>anthro_utils.py</td><td>WHO anthropometric calculations</td></tr>
+  </tbody>
+</table>
+
+<h2 id="strengths">3. Strengths</h2>
+<ol>
+  <li><strong>BRD-aligned feature set</strong> — Scan tabs, bulk baseline sync, duplicate managers, dashboard, bulk site transfer, and auto-update map closely to requirements.</li>
+  <li><strong>Async UI design</strong> — QThread workers keep the UI responsive during heavy work.</li>
+  <li><strong>Parameterized SQL</strong> — User-facing queries consistently use placeholders.</li>
+  <li><strong>Dual-mode data access</strong> — Cloud MySQL vs local SQLite with compatibility wrapper.</li>
+  <li><strong>Production CI/CD</strong> — Tag-triggered builds for Linux, Windows (Inno Setup), and macOS (Intel DMG).</li>
+  <li><strong>Sensible .gitignore</strong> — Excludes secrets, caches, baseline data folders, PyInstaller artifacts.</li>
+  <li><strong>Cascade delete ordering</strong> — Child tables deleted before parent with rollback on failure.</li>
+</ol>
+
+<h2 id="findings" class="page-break">4. Critical &amp; High-Priority Findings</h2>
+
+<h3>4.1 Security</h3>
+<h4>Critical</h4>
+<table>
+  <thead><tr><th>#</th><th>Finding</th><th>Location</th><th>Risk</th></tr></thead>
+  <tbody>
+    <tr><td>S1</td><td>Zip slip in auto-update — extractall() with no path validation</td><td>updater.py:144-145</td><td>Malicious release archive could write outside temp dir</td></tr>
+    <tr><td>S2</td><td>Unsigned, unverified updates — zip copied over install via .bat/.sh</td><td>updater.py, main_window.py:98-149</td><td>Supply-chain or MITM could replace application</td></tr>
+    <tr><td>S3</td><td>OAuth client secrets in distributable</td><td>CI inject + client_secrets.json</td><td>Credential leakage if mishandled</td></tr>
+  </tbody>
+</table>
+
+<h4>High</h4>
+<table>
+  <thead><tr><th>#</th><th>Finding</th><th>Location</th><th>Risk</th></tr></thead>
+  <tbody>
+    <tr><td>S4</td><td>Plaintext DB credentials (db.dat / injected _config.py)</td><td>_config.py, inject_config.py</td><td>Local compromise exposes production DB</td></tr>
+    <tr><td>S5</td><td>Access codes stored/compared in plaintext</td><td>database.py:368-391</td><td>DB breach exposes all access codes</td></tr>
+    <tr><td>S6</td><td>No RBAC on destructive actions — role displayed only</td><td>main_window.py, database.py</td><td>Any authenticated user can hard-delete beneficiaries</td></tr>
+    <tr><td>S7</td><td>Client-only login lockout — restart may bypass</td><td>login_window.py</td><td>Brute-force bypass</td></tr>
+  </tbody>
+</table>
+
+<h4>Medium (summary)</h4>
+<ul>
+  <li>Auth debug log in home directory (~/hapag_auth_debug.log)</li>
+  <li>PRAGMA foreign_keys=OFF on local SQLite</li>
+  <li>Update shell scripts interpolate paths — path injection risk</li>
+  <li>No release artifact checksum verification</li>
+</ul>
+
+<p><strong>Positive security notes:</strong> No eval, pickle, or dynamic SQL from user input. Search uses bound LIKE parameters. Cascade delete table names are hardcoded.</p>
+
+<h3>4.2 Reliability &amp; Correctness Bugs</h3>
+
+<h4>Delete success not validated</h4>
+<p><code>delete_beneficiary_cascade</code> returns <code>(bool, error)</code> but the UI always shows success if no exception is raised (main_window.py:1287-1293).</p>
+<pre>delete_beneficiary_cascade(record.get('beneficiary_id'))
+# Success dialog shown without checking return value</pre>
+
+<h4>Weak beneficiary ID generation</h4>
+<pre>def generate_beneficiary_id():
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))</pre>
+<p>8-character IDs have collision risk at scale; no uniqueness check on insert.</p>
+
+<h4>SQLite %s → ? replacement is naive</h4>
+<p>database.py:76-80 — A literal % in SQL strings could corrupt queries.</p>
+
+<h3>4.3 Code Quality &amp; Maintainability</h3>
+<table>
+  <thead><tr><th>#</th><th>Issue</th><th>Evidence</th></tr></thead>
+  <tbody>
+    <tr><td>Q1</td><td>God class — MainWindow ~1,296 lines</td><td>Hard to test, review, extend</td></tr>
+    <tr><td>Q2</td><td>28 bare except: blocks</td><td>parser.py (8), login_window.py (7), others</td></tr>
+    <tr><td>Q3</td><td>No structured logging</td><td>Zero import logging; print() only</td></tr>
+    <tr><td>Q4</td><td>Duplicated sites SQL</td><td>database.py, parser.py, workers.py</td></tr>
+    <tr><td>Q5</td><td>Duplicated name-matching logic</td><td>calculate_match_score vs evaluate_match</td></tr>
+    <tr><td>Q6</td><td>Unused dependencies</td><td>fastapi, uvicorn, starlette — zero imports</td></tr>
+    <tr><td>Q7</td><td>Triple fuzzy libraries</td><td>fuzzywuzzy + Levenshtein + RapidFuzz</td></tr>
+    <tr><td>Q8</td><td>Minimal static analysis</td><td>pyrightconfig.json only extraPaths</td></tr>
+  </tbody>
+</table>
+
+<h3>4.4 Performance</h3>
+<ul>
+  <li><strong>P1:</strong> fetch_beneficiaries() loads entire DB with 12 correlated subqueries per row — called on every scan.</li>
+  <li><strong>P2:</strong> Cache files at repo root (interfile_index_cache.json, global_stats_cache.json) — no documented TTL.</li>
+  <li><strong>P3:</strong> No site-scoped filter — scanning one barangay still pays full-DB cost.</li>
+</ul>
+
+<h3>4.5 Testing</h3>
+<table>
+  <thead><tr><th>Asset</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>pytest / unittest</td><td>None in backend/</td></tr>
+    <tr><td>backend/test_db.py</td><td>Manual connectivity probe</td></tr>
+    <tr><td>scratch/*.py</td><td>Dev scripts; some mutate live DB</td></tr>
+    <tr><td>CI test gate</td><td>Absent — build.yml builds only</td></tr>
+  </tbody>
+</table>
+
+<h3>4.6 DevOps &amp; Release Engineering</h3>
+<p><strong>Strengths:</strong> Tag-based multi-platform pipeline; secrets injected at build; version tag in build.</p>
+<p><strong>Gaps:</strong> No automated tests, lint, or type-check in CI; no SAST/dependency audit; no checksum on release artifacts; macOS Intel-only (document Apple Silicon limitation).</p>
+
+<h3>4.7 BRD Alignment Gaps</h3>
+<table>
+  <thead><tr><th>BRD Requirement</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>§7.3.2 Data Access Control — roles enforced</td><td>Partial — role displayed; not enforced on destructive ops</td></tr>
+    <tr><td>§7.3.3 Monitoring and Logging</td><td>Partial — UI console only; no backend logging framework</td></tr>
+    <tr><td>§8.4 Update failures handled safely</td><td>Partial — errors surfaced; zip slip and unsigned updates remain</td></tr>
+    <tr><td>§7.2 Performance — hundreds of files</td><td>Partial — workers help; full-DB fetch is bottleneck</td></tr>
+    <tr><td>§7.2 Security — credentials handled securely</td><td>Partial — gitignored secrets OK; plaintext db.dat weak</td></tr>
+  </tbody>
+</table>
+
+<h2 id="recommendations" class="page-break">5. Detailed Recommendations</h2>
+
+<h3>P0 — Do immediately (security &amp; data integrity)</h3>
+<table>
+  <thead><tr><th>ID</th><th>Recommendation</th><th>Rationale</th></tr></thead>
+  <tbody>
+    <tr><td>R1</td><td>Fix delete return-value handling</td><td>Prevents false-positive UX and data inconsistency</td></tr>
+    <tr><td>R2</td><td>Harden auto-update — validate zip paths, SHA256 checksum</td><td>Mitigates S1, S2, S11</td></tr>
+    <tr><td>R3</td><td>Enforce role-based permissions on destructive actions</td><td>BRD §7.3.2; addresses S6</td></tr>
+    <tr><td>R4</td><td>Hash access codes at rest (bcrypt/argon2)</td><td>Addresses S5</td></tr>
+    <tr><td>R5</td><td>Remove or disable auth debug log in production</td><td>Addresses S8</td></tr>
+  </tbody>
+</table>
+
+<h3>P1 — Next sprint (quality &amp; maintainability)</h3>
+<table>
+  <thead><tr><th>ID</th><th>Recommendation</th></tr></thead>
+  <tbody>
+    <tr><td>R6</td><td>Replace bare except: with specific exceptions + logging module</td></tr>
+    <tr><td>R7</td><td>Split MainWindow into ScanController, SyncController, UpdateController, DuplicateController</td></tr>
+    <tr><td>R8</td><td>Extract shared queries — get_sites_sql(), fetch_beneficiaries_light(site_id)</td></tr>
+    <tr><td>R9</td><td>Optimize fetch_beneficiaries() — JOIN/window function; optional site filter</td></tr>
+    <tr><td>R10</td><td>Trim requirements.txt — remove FastAPI stack; consolidate on RapidFuzz</td></tr>
+    <tr><td>R11</td><td>Add beneficiary ID uniqueness check on insert</td></tr>
+  </tbody>
+</table>
+
+<h3>P2 — Medium term (engineering maturity)</h3>
+<table>
+  <thead><tr><th>ID</th><th>Recommendation</th></tr></thead>
+  <tbody>
+    <tr><td>R12</td><td>Introduce pytest suite (parser, anthro_utils, database mocked, updater paths)</td></tr>
+    <tr><td>R13</td><td>Extend CI — pytest, ruff, pyright on push/PR</td></tr>
+    <tr><td>R14</td><td>Strengthen pyrightconfig.json — typeCheckingMode basic, exclude dist/build</td></tr>
+    <tr><td>R15</td><td>Code-sign Windows/macOS installers</td></tr>
+    <tr><td>R16</td><td>Document local vs cloud mode and sync policy</td></tr>
+    <tr><td>R17</td><td>Enable SQLite foreign keys in local mode where possible</td></tr>
+  </tbody>
+</table>
+
+<h3>P3 — Longer term (architecture)</h3>
+<table>
+  <thead><tr><th>ID</th><th>Recommendation</th></tr></thead>
+  <tbody>
+    <tr><td>R18</td><td>Consider thin API layer for auth and destructive ops</td></tr>
+    <tr><td>R19</td><td>Audit trail table — who synced/deleted/added with timestamp</td></tr>
+    <tr><td>R20</td><td>Runtime encrypted config instead of compiled _config.py</td></tr>
+  </tbody>
+</table>
+
+<h2 id="roadmap">6. Suggested Implementation Roadmap</h2>
+<div class="diagram">Phase P0 (Security) — ~1-2 weeks
+  ├── R1: Fix delete handling (1 day)
+  ├── R2: Zip validation + checksum (3 days)
+  └── R3: Role gates on destructive ops (5 days)
+
+Phase P1 (Quality) — ~2-3 weeks
+  ├── R6: Logging + except cleanup (5 days, after P0)
+  ├── R7: MainWindow refactor (10 days)
+  └── R9: Query optimization (5 days, parallel with R7)
+
+Phase P2 (Engineering) — ~2 weeks
+  ├── R12: pytest suite (10 days, after refactor)
+  ├── R13: CI gates
+  └── R10: Dependency cleanup (2 days)</div>
+
+<h2 id="ci">7. CI/CD Quick Wins</h2>
+<p>Add a test job to .github/workflows/build.yml:</p>
+<pre>test:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: pip install -r backend/requirements.txt pytest ruff pyright
+    - run: pytest backend/tests -q
+    - run: ruff check backend
+    - run: pyright backend</pre>
+
+<h2 id="conclusion">8. Conclusion</h2>
+<p>
+  The HAPAG Form 5A Comparator is a <strong>capable production desktop tool</strong> with thoughtful features
+  (dual DB mode, fuzzy matching, duplicate tooling, cross-platform releases) that align well with the BRD's functional goals.
+  The main risks are <strong>operational safety</strong>: auto-update trust model, lack of role enforcement,
+  silent error swallowing, and absence of automated tests.
+</p>
+<div class="box">
+  <strong>Highest-impact next steps:</strong>
+  <ol>
+    <li>Fix the delete success bug (R1)</li>
+    <li>Harden the updater (R2)</li>
+    <li>Enforce roles on destructive operations (R3)</li>
+    <li>Add pytest + CI gates for parser and database logic (R12–R13)</li>
+  </ol>
+</div>
+
+<p class="footer-note">
+  Document generated from the Comprehensive Code Review session. For the latest codebase state, re-run analysis against the current branch.
+</p>
+
+</body>
+</html>

@@ -13,6 +13,9 @@ class SettingsDialog(QDialog):
         self.setMinimumWidth(480)
         self.setModal(True)
         self._sync_worker = None
+        # controller to handle sync logic
+        from ui.controllers.settings_controller import SettingsController
+        self._controller = SettingsController(self)
         self._setup_ui()
         self._load_settings()
 
@@ -98,8 +101,18 @@ class SettingsDialog(QDialog):
     def _save_and_close(self):
         from core.app_settings import (set_mode, set_auto_sync_enabled,
                                        set_auto_sync_interval, get_mode)
+        from ui.auth_guard import require_permission
+
         old_mode = get_mode()
         new_mode = 'cloud' if self.rb_cloud.isChecked() else 'local'
+        if old_mode != new_mode:
+            parent_user = getattr(self.parent(), "current_user", None)
+            if not require_permission(self, parent_user, "settings_mode_switch"):
+                if old_mode == 'cloud':
+                    self.rb_cloud.setChecked(True)
+                else:
+                    self.rb_local.setChecked(True)
+                return
         set_mode(new_mode)
         set_auto_sync_enabled(self.chk_auto_sync.isChecked())
         set_auto_sync_interval(self.spin_interval.value())
@@ -139,6 +152,10 @@ class SettingsDialog(QDialog):
         self._start_sync_worker(mode='sync')
 
     def _run_full_replicate(self):
+        from ui.auth_guard import require_permission
+        parent_user = getattr(self.parent(), "current_user", None)
+        if not require_permission(self, parent_user, "full_replication"):
+            return
         confirm = QMessageBox.question(self, "Full Replication",
             "This will wipe the local database and re-download ALL data from cloud.\n"
             "This may take several minutes. Continue?",
@@ -147,23 +164,27 @@ class SettingsDialog(QDialog):
             self._start_sync_worker(mode='full')
 
     def _start_sync_worker(self, mode: str):
-        from core.sync_engine import SyncWorker
-        if self._sync_worker and self._sync_worker.isRunning():
-            return
+        # delegate to controller which encapsulates the sync worker
+        try:
+            self._controller.start_sync(mode)
+        except Exception:
+            # fall back to in-dialog behavior on error
+            from core.sync_engine import SyncWorker
+            if self._sync_worker and self._sync_worker.isRunning():
+                return
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setValue(0)
+            self.lbl_progress_msg.setVisible(True)
+            self.btn_sync_now.setEnabled(False)
+            self.btn_full_replicate.setEnabled(False)
+            self.btn_save.setEnabled(False)
 
-        self.progress_bar.setVisible(True)
-        self.progress_bar.setValue(0)
-        self.lbl_progress_msg.setVisible(True)
-        self.btn_sync_now.setEnabled(False)
-        self.btn_full_replicate.setEnabled(False)
-        self.btn_save.setEnabled(False)
-
-        worker_mode = SyncWorker.MODE_FULL if mode == 'full' else SyncWorker.MODE_SYNC
-        self._sync_worker = SyncWorker(mode=worker_mode, parent=self)
-        self._sync_worker.progress.connect(self._on_progress)
-        self._sync_worker.finished.connect(self._on_finished)
-        self._sync_worker.error.connect(self._on_error)
-        self._sync_worker.start()
+            worker_mode = SyncWorker.MODE_FULL if mode == 'full' else SyncWorker.MODE_SYNC
+            self._sync_worker = SyncWorker(mode=worker_mode, parent=self)
+            self._sync_worker.progress.connect(self._on_progress)
+            self._sync_worker.finished.connect(self._on_finished)
+            self._sync_worker.error.connect(self._on_error)
+            self._sync_worker.start()
 
     def _on_progress(self, pct: int, msg: str):
         self.progress_bar.setValue(pct)

@@ -1,5 +1,12 @@
 {
-  "extraPaths": [
-    "./backend"
-  ]
+  "include": ["backend"],
+  "exclude": [
+    "backend/dist",
+    "backend/build",
+    "backend/_internal",
+    "scratch"
+  ],
+  "extraPaths": ["./backend"],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true
 }

@@ -12,6 +12,9 @@ from core.app_settings import get_theme
 from ui.theme import apply_theme
 
 def main():
+    from core.logging_config import setup_logging
+    setup_logging()
+
     app = QApplication(sys.argv)
     
     # Apply macOS-inspired style with Dark/Light mode support

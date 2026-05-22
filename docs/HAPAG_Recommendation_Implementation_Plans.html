@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>HAPAG Implementation Plans</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="/dev/null" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">HAPAG Implementation Plans</h1>
+</header>
+<h1 id="hapag-form-5a-comparator-implementation-plans">HAPAG Form 5A
+Comparator — Implementation Plans</h1>
+<p><strong>Document:</strong> Per-recommendation implementation plans
+(R1–R20)<br />
+<strong>Based on:</strong> Comprehensive Code Review (May 2026)<br />
+<strong>Audience:</strong> Lead developer, QA, product owner</p>
+<p>Each plan includes: objective, scope, prerequisites, step-by-step
+tasks, files to change, testing, rollout, and risks.</p>
+<hr />
+<h2 id="dependency-overview">Dependency Overview</h2>
+<pre class="text"><code>R1 (delete fix) ──┐
+R2 (updater)      ├──► independent P0 — ship first
+R3 (RBAC)         │
+R4 (hash codes)   └──► may need DB migration + web app coordination
+R5 (debug log)    ──► independent, quick
+
+R6 (logging) ──► should precede or run parallel with R7
+R7 (refactor) ──► enables R12 tests
+R8 (shared SQL) ──► supports R9
+R9 (query opt)  ──► independent perf win
+
+R12 (pytest) + R13 (CI) ──► gate future changes
+R14 (pyright) ──► pairs with R13</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th>Rec</th>
+<th>Title</th>
+<th>Priority</th>
+<th>Effort</th>
+<th>Depends on</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R1</td>
+<td>Fix delete return handling</td>
+<td>P0</td>
+<td>0.5 day</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>R2</td>
+<td>Harden auto-update</td>
+<td>P0</td>
+<td>2–3 days</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>R3</td>
+<td>Role-based permissions</td>
+<td>P0</td>
+<td>3–5 days</td>
+<td>Product: role matrix</td>
+</tr>
+<tr class="even">
+<td>R4</td>
+<td>Hash access codes</td>
+<td>P0</td>
+<td>2–4 days</td>
+<td>DBA / web app sync</td>
+</tr>
+<tr class="odd">
+<td>R5</td>
+<td>Disable auth debug log</td>
+<td>P0</td>
+<td>0.5 day</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>R6</td>
+<td>Structured logging</td>
+<td>P1</td>
+<td>2–3 days</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>R7</td>
+<td>Split MainWindow</td>
+<td>P1</td>
+<td>5–10 days</td>
+<td>R6 helpful</td>
+</tr>
+<tr class="even">
+<td>R8</td>
+<td>Extract shared queries</td>
+<td>P1</td>
+<td>1–2 days</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>R9</td>
+<td>Optimize fetch_beneficiaries</td>
+<td>P1</td>
+<td>2–4 days</td>
+<td>R8 helpful</td>
+</tr>
+<tr class="even">
+<td>R10</td>
+<td>Trim requirements.txt</td>
+<td>P1</td>
+<td>0.5 day</td>
+<td>R12 smoke import test</td>
+</tr>
+<tr class="odd">
+<td>R11</td>
+<td>Unique beneficiary IDs</td>
+<td>P1</td>
+<td>1 day</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>R12</td>
+<td>pytest suite</td>
+<td>P2</td>
+<td>5–8 days</td>
+<td>R6, R8</td>
+</tr>
+<tr class="odd">
+<td>R13</td>
+<td>CI test/lint gates</td>
+<td>P2</td>
+<td>1 day</td>
+<td>R12 partial</td>
+</tr>
+<tr class="even">
+<td>R14</td>
+<td>pyrightconfig</td>
+<td>P2</td>
+<td>0.5 day</td>
+<td>R13</td>
+</tr>
+<tr class="odd">
+<td>R15</td>
+<td>Code-sign installers</td>
+<td>P2</td>
+<td>2–5 days</td>
+<td>CI secrets, certs</td>
+</tr>
+<tr class="even">
+<td>R16</td>
+<td>Local/cloud documentation</td>
+<td>P2</td>
+<td>1 day</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>R17</td>
+<td>SQLite foreign keys</td>
+<td>P2</td>
+<td>1–2 days</td>
+<td>sync_engine review</td>
+</tr>
+<tr class="even">
+<td>R18</td>
+<td>Thin API layer</td>
+<td>P3</td>
+<td>15+ days</td>
+<td>Infra, web team</td>
+</tr>
+<tr class="odd">
+<td>R19</td>
+<td>Audit trail</td>
+<td>P3</td>
+<td>3–5 days</td>
+<td>R3, optional R18</td>
+</tr>
+<tr class="even">
+<td>R20</td>
+<td>Encrypted runtime config</td>
+<td>P3</td>
+<td>5–8 days</td>
+<td>R15 trust model</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="r1-fix-delete-return-value-handling">R1 — Fix Delete
+Return-Value Handling</h2>
+<h3 id="objective">Objective</h3>
+<p>Ensure the UI only reports success when
+<code>delete_beneficiary_cascade()</code> actually returns
+<code>True</code>.</p>
+<h3 id="scope">Scope</h3>
+<ul>
+<li><strong>In:</strong> <code>main_window.py</code> missing-Excel
+delete path<br />
+</li>
+<li><strong>Out:</strong> <code>db_duplicate_dialog.py</code> already
+checks <code>ok, err</code> — use as reference pattern</li>
+</ul>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>None.</p>
+<h3 id="implementation-steps">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Audit all delete call sites</strong> (grep
+<code>delete_beneficiary_cascade</code>):
+<ul>
+<li><code>backend/ui/main_window.py</code> (~1289) —
+<strong>broken</strong></li>
+<li><code>backend/ui/components/db_duplicate_dialog.py</code> (~53) —
+<strong>correct pattern</strong></li>
+</ul></li>
+<li><strong>Fix <code>main_window.py</code>
+<code>_on_missing_excel_action</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ok, err <span class="op">=</span> delete_beneficiary_cascade(record.get(<span class="st">&#39;beneficiary_id&#39;</span>))</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> ok:</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    QMessageBox.critical(<span class="va">self</span>, <span class="st">&quot;Database Error&quot;</span>, <span class="ss">f&quot;Failed to delete record:</span><span class="ch">\n</span><span class="sc">{</span>err<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>record[<span class="st">&#39;_deleted_from_db&#39;</span>] <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">hasattr</span>(widget, <span class="st">&#39;mark_as_resolved&#39;</span>):</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    widget.mark_as_resolved()</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>QMessageBox.information(<span class="va">self</span>, <span class="st">&quot;Deleted&quot;</span>, <span class="ss">f&quot;Successfully deleted </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">.&quot;</span>)</span></code></pre></div>
+<ol start="3" type="1">
+<li><p><strong>Optional:</strong> Add
+<code>if not beneficiary_id:</code> guard before calling DB.</p></li>
+<li><p><strong>Standardize helper</strong> in
+<code>core/database.py</code> (optional):</p></li>
+</ol>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> delete_beneficiary_or_raise(beneficiary_id: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    ok, err <span class="op">=</span> delete_beneficiary_cascade(beneficiary_id)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> ok:</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">RuntimeError</span>(err <span class="kw">or</span> <span class="st">&quot;Delete failed&quot;</span>)</span></code></pre></div>
+<h3 id="files-to-change">Files to Change</h3>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/ui/main_window.py</code></td>
+<td>Check <code>(ok, err)</code> tuple</td>
+</tr>
+<tr class="even">
+<td><code>backend/ui/components/db_duplicate_dialog.py</code></td>
+<td>Verify parity (no change if OK)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing">Testing</h3>
+<table>
+<colgroup>
+<col style="width: 46%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Test</th>
+<th>Steps</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Manual — success</td>
+<td>Delete a test beneficiary with no children; confirm DB row gone and
+success dialog</td>
+</tr>
+<tr class="even">
+<td>Manual — failure</td>
+<td>Use invalid <code>beneficiary_id</code>; confirm error dialog, row
+not marked resolved</td>
+</tr>
+<tr class="odd">
+<td>Unit (R12)</td>
+<td>Mock <code>delete_beneficiary_cascade</code> returning
+<code>(False, "FK constraint")</code>; assert no success message</td>
+</tr>
+</tbody>
+</table>
+<h3 id="acceptance-criteria">Acceptance Criteria</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Success dialog only when
+<code>ok is True</code></label></li>
+<li><label><input type="checkbox" />Error dialog shows <code>err</code>
+when <code>ok is False</code></label></li>
+<li><label><input type="checkbox" />Grid row not marked resolved on
+failure</label></li>
+</ul>
+<h3 id="risks">Risks</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 66%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Exception path still shows generic error</td>
+<td>Keep <code>try/except</code> only around unexpected failures, not
+for expected <code>(False, err)</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 2–4 hours</p>
+<hr />
+<h2 id="r2-harden-auto-update-zip-validation-checksum">R2 — Harden
+Auto-Update (Zip Validation + Checksum)</h2>
+<h3 id="objective-1">Objective</h3>
+<p>Prevent zip-slip attacks and detect tampered release artifacts before
+overwriting the installed application.</p>
+<h3 id="scope-1">Scope</h3>
+<ul>
+<li><strong>In:</strong> <code>updater.py</code>,
+<code>main_window.py</code> update install flow, CI release
+workflow<br />
+</li>
+<li><strong>Out:</strong> Full code-signing (see R15)</li>
+</ul>
+<h3 id="prerequisites-1">Prerequisites</h3>
+<ul>
+<li>GitHub release process owned by team<br />
+</li>
+<li>Agreement on checksum publication format (release notes vs
+<code>.sha256</code> file per asset)</li>
+</ul>
+<h3 id="implementation-steps-1">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Add safe extraction</strong> in
+<code>backend/core/updater.py</code>:</li>
+</ol>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> safe_extract_zip(zip_path: <span class="bu">str</span>, dest_dir: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    dest_real <span class="op">=</span> os.path.realpath(dest_dir)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> zipfile.ZipFile(zip_path, <span class="st">&#39;r&#39;</span>) <span class="im">as</span> zf:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> member <span class="kw">in</span> zf.namelist():</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>            target <span class="op">=</span> os.path.realpath(os.path.join(dest_dir, member))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> target.startswith(dest_real <span class="op">+</span> os.sep) <span class="kw">and</span> target <span class="op">!=</span> dest_real:</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>                <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="ss">f&quot;Unsafe path in archive: </span><span class="sc">{</span>member<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        zf.extractall(dest_dir)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ... existing nested-folder detection ...</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Download checksum file</strong> in
+<code>DownloadUpdateThread.run()</code>:
+<ul>
+<li>After resolving <code>download_url</code>, fetch
+<code>{asset_name}.sha256</code> or read checksums from release
+body<br />
+</li>
+<li>Compute SHA-256 of downloaded zip; compare before extract<br />
+</li>
+<li>On mismatch: delete zip, emit <code>error</code> signal</li>
+</ul></li>
+<li><strong>CI: publish checksums</strong> in
+<code>.github/workflows/build.yml</code> <code>release</code> job:</li>
+</ol>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Generate SHA256 checksums</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">  run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    sha256sum hapag_comparator_* &gt; checksums.txt</span></code></pre></div>
+<p>Attach <code>checksums.txt</code> to GitHub release.</p>
+<ol start="4" type="1">
+<li><p><strong>Abort install on validation failure</strong> in
+<code>main_window.py</code> — do not spawn
+<code>.bat</code>/<code>.sh</code> if download thread errors.</p></li>
+<li><p><strong>Document</strong> operator steps in
+<code>backend/ui/manual.html</code> — “Updates verified via
+SHA256”.</p></li>
+</ol>
+<h3 id="files-to-change-1">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/core/updater.py</code></td>
+<td><code>safe_extract_zip</code>, checksum verify</td>
+</tr>
+<tr class="even">
+<td><code>backend/ui/main_window.py</code></td>
+<td>Block install on failed validation</td>
+</tr>
+<tr class="odd">
+<td><code>.github/workflows/build.yml</code></td>
+<td>Emit <code>checksums.txt</code> on release</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing-1">Testing</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Test</th>
+<th>Steps</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Unit</td>
+<td>Zip with <code>../evil.txt</code> member raises
+<code>ValueError</code></td>
+</tr>
+<tr class="even">
+<td>Unit</td>
+<td>Wrong checksum rejects extract</td>
+</tr>
+<tr class="odd">
+<td>Manual</td>
+<td>Full update on Windows/Linux with valid release</td>
+</tr>
+<tr class="even">
+<td>Security</td>
+<td>Craft malicious zip in temp; confirm rejection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="acceptance-criteria-1">Acceptance Criteria</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />No <code>extractall</code> without
+per-member path check<br />
+</label></li>
+<li><label><input type="checkbox" />Checksum verified before
+extraction<br />
+</label></li>
+<li><label><input type="checkbox" />CI publishes checksums for all
+platform artifacts<br />
+</label></li>
+<li><label><input type="checkbox" />Failed validation shows user-visible
+error; install dir unchanged</label></li>
+</ul>
+<h3 id="risks-1">Risks</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 66%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Checksum file missing on old releases</td>
+<td>Fall back: block update or require minimum version</td>
+</tr>
+<tr class="even">
+<td>HTTPS MITM</td>
+<td>Checksum reduces risk; R15 adds signing</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 2–3 days</p>
+<hr />
+<h2 id="r3-enforce-role-based-permissions">R3 — Enforce Role-Based
+Permissions</h2>
+<h3 id="objective-2">Objective</h3>
+<p>Align with BRD §7.3.2: only authorized roles can perform destructive
+or high-impact operations.</p>
+<h3 id="scope-2">Scope</h3>
+<p><strong>Gate these actions (minimum):</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th>Action</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Hard delete beneficiary</td>
+<td><code>main_window.py</code>,
+<code>db_duplicate_dialog.py</code></td>
+</tr>
+<tr class="even">
+<td>Delete Excel rows</td>
+<td><code>excel_duplicate_dialog.py</code></td>
+</tr>
+<tr class="odd">
+<td>Bulk sync baseline</td>
+<td><code>main_window.py</code> (<code>on_bulk_sync_*</code>)</td>
+</tr>
+<tr class="even">
+<td>Add beneficiary</td>
+<td><code>main_window.py</code> <code>_on_missing_db_action</code></td>
+</tr>
+<tr class="odd">
+<td>Bulk site transfer</td>
+<td><code>bulk_transfer_window.py</code></td>
+</tr>
+<tr class="even">
+<td>Full replication</td>
+<td><code>settings_dialog.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="prerequisites-2">Prerequisites</h3>
+<ul>
+<li><strong>Product decision:</strong> Role → permission matrix (example
+below)<br />
+</li>
+<li>Confirm <code>users.role</code> values in production DB
+(e.g. <code>admin</code>, <code>encoder</code>,
+<code>supervisor</code>)</li>
+</ul>
+<h3
+id="proposed-permission-matrix-draft-confirm-with-stakeholders">Proposed
+Permission Matrix (draft — confirm with stakeholders)</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Permission</th>
+<th style="text-align: center;">admin</th>
+<th style="text-align: center;">supervisor</th>
+<th style="text-align: center;">encoder</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>scan</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr class="even">
+<td><code>sync_baseline</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr class="odd">
+<td><code>bulk_sync</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr class="even">
+<td><code>add_beneficiary</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr class="odd">
+<td><code>edit_discrepancy</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr class="even">
+<td><code>delete_beneficiary</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr class="odd">
+<td><code>delete_excel_row</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr class="even">
+<td><code>bulk_transfer</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr class="odd">
+<td><code>full_replication</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr class="even">
+<td><code>settings_mode_switch</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+</tr>
+</tbody>
+</table>
+<h3 id="implementation-steps-2">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Create
+<code>backend/core/permissions.py</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>ROLE_PERMISSIONS: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">set</span>[<span class="bu">str</span>]] <span class="op">=</span> { ... }</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> has_permission(role: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span>, permission: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> role:</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">False</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> permission <span class="kw">in</span> ROLE_PERMISSIONS.get(role.lower(), <span class="bu">set</span>())</span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Create <code>backend/ui/auth_guard.py</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> require_permission(parent, user: <span class="bu">dict</span>, permission: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> has_permission(user.get(<span class="st">&quot;role&quot;</span>), permission):</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    QMessageBox.warning(parent, <span class="st">&quot;Access Denied&quot;</span>, ...)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">False</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Apply at action entry points</strong> — first line of
+handlers:</li>
+</ol>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> require_permission(<span class="va">self</span>, <span class="va">self</span>.current_user, <span class="st">&quot;delete_beneficiary&quot;</span>):</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span></span></code></pre></div>
+<ol start="4" type="1">
+<li><p><strong>Disable buttons at scan complete</strong> when permission
+missing (better UX than dialog-only).</p></li>
+<li><p><strong>Pass <code>current_user</code> into child
+windows</strong> (<code>BulkTransferWindow</code>, dialogs) if not
+already.</p></li>
+<li><p><strong>Server-side (future):</strong> If web app shares DB, add
+DB triggers or API checks — document as gap until R18.</p></li>
+</ol>
+<h3 id="files-to-change-2">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/core/permissions.py</code></td>
+<td><strong>New</strong> — role map</td>
+</tr>
+<tr class="even">
+<td><code>backend/ui/auth_guard.py</code></td>
+<td><strong>New</strong> — UI helper</td>
+</tr>
+<tr class="odd">
+<td><code>backend/ui/main_window.py</code></td>
+<td>Guards on bulk sync, delete, add</td>
+</tr>
+<tr class="even">
+<td><code>backend/ui/bulk_transfer_window.py</code></td>
+<td>Guard + disable UI</td>
+</tr>
+<tr class="odd">
+<td><code>backend/ui/components/*_dialog.py</code></td>
+<td>Guards</td>
+</tr>
+<tr class="even">
+<td><code>backend/ui/components/settings_dialog.py</code></td>
+<td>Replication guard</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing-2">Testing</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Test</th>
+<th>Steps</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Unit</td>
+<td><code>has_permission("encoder", "delete_beneficiary")</code> →
+False</td>
+</tr>
+<tr class="even">
+<td>Manual</td>
+<td>Login as each role; verify buttons hidden/disabled</td>
+</tr>
+<tr class="odd">
+<td>Manual</td>
+<td>Attempt delete as encoder — blocked</td>
+</tr>
+</tbody>
+</table>
+<h3 id="acceptance-criteria-2">Acceptance Criteria</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Documented role matrix approved by
+product owner<br />
+</label></li>
+<li><label><input type="checkbox" />All destructive actions gated<br />
+</label></li>
+<li><label><input type="checkbox" />UI reflects permissions before and
+after scan<br />
+</label></li>
+<li><label><input type="checkbox" />Access denied message is
+clear</label></li>
+</ul>
+<h3 id="risks-2">Risks</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 66%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Role strings inconsistent in DB</td>
+<td>Normalize with <code>.lower().strip()</code>; log unknown roles</td>
+</tr>
+<tr class="even">
+<td>Local SQLite mode bypasses server policy</td>
+<td>Same client checks; replication still pulls
+<code>users.role</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 3–5 days (includes stakeholder sign-off)</p>
+<hr />
+<h2 id="r4-hash-access-codes-at-rest">R4 — Hash Access Codes at
+Rest</h2>
+<h3 id="objective-3">Objective</h3>
+<p>Store access codes as one-way hashes; never compare plaintext in
+SQL.</p>
+<h3 id="scope-3">Scope</h3>
+<ul>
+<li>Desktop login (<code>authenticate_user</code>)<br />
+</li>
+<li><strong>Requires coordination:</strong> Web app user management /
+password reset flows</li>
+</ul>
+<h3 id="prerequisites-3">Prerequisites</h3>
+<ul>
+<li>Choose algorithm: <strong>bcrypt</strong> (add <code>bcrypt</code>
+to requirements) or <code>argon2-cffi</code><br />
+</li>
+<li>DBA runs migration on <code>users.access_code</code> column (widen
+to <code>VARCHAR(255)</code>)<br />
+</li>
+<li>Migration script for existing plaintext codes</li>
+</ul>
+<h3 id="implementation-steps-3">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Add
+<code>backend/core/password_utils.py</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> bcrypt</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> hash_access_code(plain: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> verify_access_code(plain: <span class="bu">str</span>, hashed: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> bcrypt.checkpw(plain.encode(), hashed.encode())</span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>Change <code>authenticate_user</code> in
+<code>database.py</code>:</strong></p>
+<ul>
+<li>Fetch user by <code>email</code> only (when Google flow) or by email
+list<br />
+</li>
+<li>Verify code in Python with <code>verify_access_code</code><br />
+</li>
+<li><strong>Do not</strong> <code>WHERE access_code = %s</code> with
+plaintext</li>
+</ul></li>
+<li><p><strong>Migration script
+<code>backend/scripts/migrate_access_codes.py</code>:</strong></p>
+<ul>
+<li><code>SELECT user_id, access_code FROM users WHERE access_code NOT LIKE '$2%'</code><br />
+</li>
+<li>Hash each; <code>UPDATE users SET access_code = %s</code><br />
+</li>
+<li>Run once on staging, then production</li>
+</ul></li>
+<li><p><strong>Web app alignment:</strong> Document that new users get
+hashed codes; admin tools must use same hasher.</p></li>
+<li><p><strong>Optional:</strong> Rate limiting via DB
+<code>login_attempts</code> table (server-side) — out of scope for
+desktop-only fix.</p></li>
+</ol>
+<h3 id="files-to-change-3">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/core/password_utils.py</code></td>
+<td><strong>New</strong></td>
+</tr>
+<tr class="even">
+<td><code>backend/core/database.py</code></td>
+<td><code>authenticate_user</code> rewrite</td>
+</tr>
+<tr class="odd">
+<td><code>backend/requirements.txt</code></td>
+<td>Add <code>bcrypt</code></td>
+</tr>
+<tr class="even">
+<td><code>backend/scripts/migrate_access_codes.py</code></td>
+<td><strong>New</strong></td>
+</tr>
+<tr class="odd">
+<td>Web app (external)</td>
+<td>Same hashing on user create/update</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing-3">Testing</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Test</th>
+<th>Steps</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Unit</td>
+<td>Hash + verify round-trip</td>
+</tr>
+<tr class="even">
+<td>Unit</td>
+<td>Wrong code fails</td>
+</tr>
+<tr class="odd">
+<td>Migration</td>
+<td>Staging: migrate 3 users; login still works</td>
+</tr>
+<tr class="even">
+<td>Regression</td>
+<td>Google OAuth + access code flow</td>
+</tr>
+</tbody>
+</table>
+<h3 id="acceptance-criteria-3">Acceptance Criteria</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />No plaintext access codes in DB
+after migration<br />
+</label></li>
+<li><label><input type="checkbox" />Login works for migrated users<br />
+</label></li>
+<li><label><input type="checkbox" />New users stored hashed from web app
++ desktop admin tools</label></li>
+</ul>
+<h3 id="risks-3">Risks</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Web app still writes plaintext</td>
+<td>Coordinate release; feature flag</td>
+</tr>
+<tr class="even">
+<td>Migration partial failure</td>
+<td>Transaction per batch; backup first</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 2–4 days (+ web team)</p>
+<hr />
+<h2 id="r5-disable-auth-debug-log-in-production">R5 — Disable Auth Debug
+Log in Production</h2>
+<h3 id="objective-4">Objective</h3>
+<p>Stop writing OAuth debug traces to
+<code>~/hapag_auth_debug.log</code> in release builds.</p>
+<h3 id="implementation-steps-4">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Add build flag</strong> in <code>core/version.py</code> or
+inject at CI:</li>
+</ol>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>IS_PRODUCTION_BUILD <span class="op">=</span> <span class="bu">getattr</span>(sys, <span class="st">&#39;frozen&#39;</span>, <span class="va">False</span>)</span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Replace <code>log_debug</code> in
+<code>login_window.py</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> log_debug(<span class="va">self</span>, msg):</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> IS_PRODUCTION_BUILD:</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        <span class="co"># existing file write</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><p><strong>Or use R6 logging</strong> at <code>DEBUG</code> level
+only when env <code>HAPAG_DEBUG=1</code>.</p></li>
+<li><p><strong>Delete existing log files</strong> in UAT checklist
+(one-time user comms).</p></li>
+</ol>
+<h3 id="files-to-change-4">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/ui/login_window.py</code></td>
+<td>Guard <code>log_debug</code></td>
+</tr>
+<tr class="even">
+<td><code>backend/core/version.py</code></td>
+<td>Optional <code>DEBUG_BUILD</code> flag</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing-4">Testing</h3>
+<ul>
+<li>Frozen build: no file created after login<br />
+</li>
+<li>Dev mode: log still available when debugging</li>
+</ul>
+<p><strong>Effort:</strong> 2–4 hours</p>
+<hr />
+<h2 id="r6-structured-logging-replace-print-bare-except">R6 — Structured
+Logging (Replace print + bare except)</h2>
+<h3 id="objective-5">Objective</h3>
+<p>Centralized logging with levels; replace bare <code>except:</code>
+with specific exceptions.</p>
+<h3 id="implementation-steps-5">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Create
+<code>backend/core/logging_config.py</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> logging.handlers <span class="im">import</span> RotatingFileHandler</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> setup_logging():</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    log_dir <span class="op">=</span> ...  <span class="co"># same AppData as app_settings</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    logging.basicConfig(...)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># RotatingFileHandler 2MB x 5</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>Call <code>setup_logging()</code> in
+<code>app.py</code></strong> before UI.</p></li>
+<li><p><strong>Replace <code>print(f"[TAG]")</code></strong> in
+<code>database.py</code>, <code>sync_engine.py</code>,
+<code>parser.py</code> with:</p></li>
+</ol>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>logger <span class="op">=</span> logging.getLogger(<span class="va">__name__</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>logger.error(<span class="st">&quot;...&quot;</span>, exc_info<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Bare except remediation</strong> (28 sites) — priority
+order:
+<ul>
+<li><code>parser.py</code> (8) — use
+<code>except (ValueError, TypeError):</code> for dates<br />
+</li>
+<li><code>login_window.py</code> (7) — log and continue or
+re-raise<br />
+</li>
+<li><code>database.py</code>, <code>workers.py</code>, UI components —
+same pattern</li>
+</ul></li>
+<li><strong>Wire UI console</strong> in <code>main_window.py</code> to
+<code>logging.Handler</code> emitting to QTextEdit.</li>
+</ol>
+<h3 id="files-to-change-5">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/core/logging_config.py</code></td>
+<td><strong>New</strong></td>
+</tr>
+<tr class="even">
+<td><code>backend/app.py</code></td>
+<td>Init logging</td>
+</tr>
+<tr class="odd">
+<td>All modules with <code>print(</code> / <code>except:</code></td>
+<td>Incremental PRs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing-5">Testing</h3>
+<ul>
+<li>Trigger DB error; verify log file contains stack trace<br />
+</li>
+<li>UI console shows WARNING+</li>
+</ul>
+<h3 id="acceptance-criteria-4">Acceptance Criteria</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Zero bare <code>except:</code> in
+<code>backend/</code> (enforced by ruff rule <code>E722</code>)<br />
+</label></li>
+<li><label><input type="checkbox" />Log file under AppData with
+rotation</label></li>
+</ul>
+<p><strong>Effort:</strong> 2–3 days</p>
+<hr />
+<h2 id="r7-split-mainwindow-into-controllers">R7 — Split MainWindow into
+Controllers</h2>
+<h3 id="objective-6">Objective</h3>
+<p>Reduce <code>main_window.py</code> (~1,296 lines) into testable,
+focused modules.</p>
+<h3 id="target-structure">Target Structure</h3>
+<pre class="text"><code>backend/ui/
+  main_window.py          # Layout, tabs, wiring only (~300 lines)
+  controllers/
+    scan_controller.py    # File selection, ScanWorker, results routing
+    sync_controller.py    # bulk sync, single sync, baseline updates
+    update_controller.py  # auto-update threads + install scripts
+    duplicate_controller.py
+    resolution_controller.py  # name/bday resolve dialogs</code></pre>
+<h3 id="implementation-steps-6">Implementation Steps</h3>
+<ol type="1">
+<li><p><strong>Extract <code>UpdateController</code> first</strong>
+(smallest coupling) — move lines ~60–155 update logic.</p></li>
+<li><p><strong>Extract <code>ScanController</code></strong> —
+<code>start_scan</code>, worker signals, tab population.</p></li>
+<li><p><strong>Extract <code>SyncController</code></strong> — all
+<code>on_bulk_sync_*</code>, <code>_do_bulk_sync</code>, single-record
+sync.</p></li>
+<li><p><strong>Keep <code>MainWindow</code> as facade</strong> — owns
+widgets; controllers receive <code>(main_window)</code> or
+callbacks.</p></li>
+<li><p><strong>Use signals/slots</strong> between controllers and main
+window for decoupling.</p></li>
+<li><p><strong>No behavior change</strong> in this refactor — pure move;
+R12 tests lock behavior.</p></li>
+</ol>
+<h3 id="files-to-change-6">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/ui/main_window.py</code></td>
+<td>Shrink</td>
+</tr>
+<tr class="even">
+<td><code>backend/ui/controllers/*.py</code></td>
+<td><strong>New</strong> (4–5 files)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing-6">Testing</h3>
+<ul>
+<li>Full manual UAT script: scan → bulk sync → delete → update
+check<br />
+</li>
+<li>After R12: integration tests on controller public methods</li>
+</ul>
+<h3 id="risks-4">Risks</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Regression in signal wiring</td>
+<td>One controller per PR; don’t big-bang</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 5–10 days (phased PRs)</p>
+<hr />
+<h2 id="r8-extract-shared-sql-queries">R8 — Extract Shared SQL
+Queries</h2>
+<h3 id="objective-7">Objective</h3>
+<p>Single source of truth for sites list and beneficiary fetch
+queries.</p>
+<h3 id="implementation-steps-7">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Add to <code>database.py</code> (or
+<code>backend/core/queries.py</code>):</strong></li>
+</ol>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>SITES_QUERY <span class="op">=</span> <span class="st">&quot;&quot;&quot;SELECT s.site_id, ... ORDER BY s.site_name&quot;&quot;&quot;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_sites():</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _execute_query(SITES_QUERY)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fetch_beneficiaries(site_id: <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>) <span class="op">-&gt;</span> <span class="bu">list</span>:</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    sql <span class="op">=</span> BENEFICIARIES_BASE_QUERY</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    args <span class="op">=</span> []</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> site_id:</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>        sql <span class="op">+=</span> <span class="st">&quot; WHERE b.site_id = </span><span class="sc">%s</span><span class="st">&quot;</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        args.append(site_id)</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    ...</span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>Remove duplicates from <code>parser.py</code> (~223) and
+<code>workers.py</code> (~51)</strong> — import
+<code>get_sites</code>.</p></li>
+<li><p><strong>Add
+<code>fetch_beneficiaries_for_sites(site_ids: list)</code></strong> if
+multi-site scan filter needed later.</p></li>
+</ol>
+<h3 id="files-to-change-7">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/core/database.py</code> or
+<code>queries.py</code></td>
+<td>Central SQL</td>
+</tr>
+<tr class="even">
+<td><code>backend/core/parser.py</code></td>
+<td>Remove duplicate</td>
+</tr>
+<tr class="odd">
+<td><code>backend/ui/workers.py</code></td>
+<td>Remove duplicate</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 1–2 days</p>
+<hr />
+<h2 id="r9-optimize-fetch_beneficiaries">R9 — Optimize
+<code>fetch_beneficiaries()</code></h2>
+<h3 id="objective-8">Objective</h3>
+<p>Cut scan-time DB load; avoid 12 correlated subqueries per row.</p>
+<h3 id="implementation-steps-8">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Rewrite query</strong> using join + subquery for latest
+baseline:</li>
+</ol>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> b.<span class="op">*</span>, s.site_name, <span class="op">..</span>., bl.weight, bl.height, <span class="op">..</span>.</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> beneficiaries b</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> sites s <span class="kw">ON</span> <span class="op">..</span>.</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> (</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">SELECT</span> beneficiary_id, <span class="fu">MAX</span>(created_at) <span class="kw">AS</span> max_created</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FROM</span> baseline_info <span class="kw">GROUP</span> <span class="kw">BY</span> beneficiary_id</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>) latest <span class="kw">ON</span> <span class="op">..</span>.</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> baseline_info bl <span class="kw">ON</span> bl.beneficiary_id <span class="op">=</span> latest.beneficiary_id</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> bl.created_at <span class="op">=</span> latest.max_created</span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>Add optional <code>site_id</code> filter</strong> (R8) —
+when Excel files map to one site, pass filter from
+<code>ScanWorker</code>.</p></li>
+<li><p><strong>Benchmark</strong> on staging: record row count, query
+time before/after.</p></li>
+<li><p><strong>Verify SQLite wrapper</strong> still works with same SQL
+(test local mode).</p></li>
+<li><p><strong>Consider materialized view</strong> on server (DBA) —
+long-term if still slow.</p></li>
+</ol>
+<h3 id="files-to-change-8">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/core/database.py</code></td>
+<td>New query</td>
+</tr>
+<tr class="even">
+<td><code>backend/ui/workers.py</code></td>
+<td>Pass site filter when known</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testing-7">Testing</h3>
+<ul>
+<li>Compare scan results row counts match old query (snapshot
+test)<br />
+</li>
+<li>Time scan with 10k beneficiaries — target &lt;50% duration
+reduction</li>
+</ul>
+<p><strong>Effort:</strong> 2–4 days</p>
+<hr />
+<h2 id="r10-trim-requirements.txt">R10 — Trim
+<code>requirements.txt</code></h2>
+<h3 id="objective-9">Objective</h3>
+<p>Remove unused packages; reduce bundle size and attack surface.</p>
+<h3 id="implementation-steps-9">Implementation Steps</h3>
+<ol type="1">
+<li><p><strong>Confirm unused</strong> (already verified):
+<code>fastapi</code>, <code>uvicorn</code>, <code>starlette</code>,
+<code>python-multipart</code>.</p></li>
+<li><p><strong>Evaluate fuzzy stack:</strong> Grep
+<code>fuzzywuzzy</code> / <code>fuzz</code> — migrate to
+<code>RapidFuzz</code> only; remove <code>fuzzywuzzy</code>,
+<code>python-Levenshtein</code> if unused.</p></li>
+<li><p><strong>Regenerate lockfile:</strong></p></li>
+</ol>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pyinstaller</span> hapag_comparator.spec  <span class="co"># smoke build</span></span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Run import smoke test:</strong></li>
+</ol>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># backend/tests/test_imports.py</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_core_imports():</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> app  <span class="co"># noqa</span></span></code></pre></div>
+<h3 id="files-to-change-9">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/requirements.txt</code></td>
+<td>Remove unused</td>
+</tr>
+<tr class="even">
+<td><code>backend/core/parser.py</code></td>
+<td>RapidFuzz-only if needed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 0.5 day</p>
+<hr />
+<h2 id="r11-beneficiary-id-uniqueness-check">R11 — Beneficiary ID
+Uniqueness Check</h2>
+<h3 id="objective-10">Objective</h3>
+<p>Prevent duplicate <code>beneficiary_id</code> on insert.</p>
+<h3 id="implementation-steps-10">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Replace <code>generate_beneficiary_id()</code>
+with:</strong></li>
+</ol>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_unique_beneficiary_id(cursor, max_attempts<span class="op">=</span><span class="dv">10</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(max_attempts):</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>        bid <span class="op">=</span> _random_id()</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>        cursor.execute(<span class="st">&quot;SELECT 1 FROM beneficiaries WHERE beneficiary_id = </span><span class="sc">%s</span><span class="st"> LIMIT 1&quot;</span>, (bid,))</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> cursor.fetchone():</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> bid</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">&quot;Could not generate unique beneficiary_id&quot;</span>)</span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>Use in <code>add_beneficiary_to_db</code></strong> and
+baseline <code>info_id</code> generation.</p></li>
+<li><p><strong>Optional:</strong> DB <code>UNIQUE</code> constraint on
+<code>beneficiaries.beneficiary_id</code> (verify schema).</p></li>
+<li><p><strong>Increase length</strong> to 12 chars if collision anxiety
+at scale (product decision).</p></li>
+</ol>
+<h3 id="files-to-change-10">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/core/database.py</code></td>
+<td><code>generate_unique_beneficiary_id</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 1 day</p>
+<hr />
+<h2 id="r12-introduce-pytest-suite">R12 — Introduce pytest Suite</h2>
+<h3 id="objective-11">Objective</h3>
+<p>Automated regression tests for core logic without live DB.</p>
+<h3 id="implementation-steps-11">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Add structure:</strong></li>
+</ol>
+<pre class="text"><code>backend/tests/
+  conftest.py          # fixtures, mock DB connection
+  test_parser.py
+  test_permissions.py
+  test_password_utils.py
+  test_updater_safe_extract.py
+  test_anthro_utils.py
+  test_database_delete.py  # mock cursor</code></pre>
+<ol start="2" type="1">
+<li><p><strong>Add dev deps</strong> <code>requirements-dev.txt</code>:
+<code>pytest</code>, <code>pytest-qt</code> (optional),
+<code>pytest-mock</code>.</p></li>
+<li><p><strong>Priority tests:</strong></p>
+<ul>
+<li><code>split_beneficiary_name</code> /
+<code>calculate_match_score</code> edge cases<br />
+</li>
+<li><code>safe_extract_zip</code> malicious paths<br />
+</li>
+<li><code>has_permission</code> matrix<br />
+</li>
+<li><code>delete_beneficiary_cascade</code> return handling (mock)</li>
+</ul></li>
+<li><p><strong>Do not</strong> hit production DB in CI — all
+mocked.</p></li>
+</ol>
+<h3 id="files-to-change-11">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/tests/**</code></td>
+<td><strong>New</strong></td>
+</tr>
+<tr class="even">
+<td><code>requirements-dev.txt</code></td>
+<td><strong>New</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 5–8 days (incremental)</p>
+<hr />
+<h2 id="r13-extend-ci-test-lint-typecheck">R13 — Extend CI (Test / Lint
+/ Typecheck)</h2>
+<h3 id="objective-12">Objective</h3>
+<p>Gate merges/releases on automated quality checks.</p>
+<h3 id="implementation-steps-12">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Add
+<code>.github/workflows/quality.yml</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">push</span><span class="kw">,</span><span class="at"> pull_request</span><span class="kw">]</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">quality</span><span class="kw">:</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-python@v5</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">python-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.12&#39;</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> pip install -r backend/requirements.txt -r requirements-dev.txt ruff pyright</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> pytest backend/tests -q</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> ruff check backend</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> pyright backend</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>Optional:</strong> Require <code>quality</code> job
+before <code>release</code> workflow (branch protection).</p></li>
+<li><p><strong>Add <code>ruff.toml</code></strong> with
+<code>select = ["E", "F", "E722"]</code>.</p></li>
+</ol>
+<h3 id="files-to-change-12">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>.github/workflows/quality.yml</code></td>
+<td><strong>New</strong></td>
+</tr>
+<tr class="even">
+<td><code>ruff.toml</code></td>
+<td><strong>New</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 1 day</p>
+<hr />
+<h2 id="r14-strengthen-pyrightconfig.json">R14 — Strengthen
+<code>pyrightconfig.json</code></h2>
+<h3 id="implementation-steps-13">Implementation Steps</h3>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;include&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;backend&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;exclude&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;backend/dist&quot;</span><span class="ot">,</span> <span class="st">&quot;backend/build&quot;</span><span class="ot">,</span> <span class="st">&quot;backend/_internal&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;extraPaths&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;./backend&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;typeCheckingMode&quot;</span><span class="fu">:</span> <span class="st">&quot;basic&quot;</span><span class="fu">,</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;reportMissingImports&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>Fix top N errors incrementally; don’t block CI on <code>strict</code>
+initially.</p>
+<p><strong>Effort:</strong> 0.5 day setup + ongoing</p>
+<hr />
+<h2 id="r15-code-sign-windowsmacos-installers">R15 — Code-Sign
+Windows/macOS Installers</h2>
+<h3 id="objective-13">Objective</h3>
+<p>Reduce SmartScreen/Gatekeeper warnings; strengthen update trust
+chain.</p>
+<h3 id="implementation-steps-14">Implementation Steps</h3>
+<ol type="1">
+<li><strong>Windows:</strong> Obtain Authenticode cert; sign
+<code>hapag_comparator.exe</code> and Inno Setup output in CI:</li>
+</ol>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> sslcom/Actions@v2</span><span class="co">  # or signtool with secret cert</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>macOS:</strong> Apple Developer ID; <code>codesign</code>
++ <code>notarize</code> DMG (requires macOS runner secrets).</p></li>
+<li><p><strong>Store secrets</strong> in GitHub Actions:
+<code>CSC_LINK</code>, <code>CSC_KEY_PASSWORD</code>, Apple API
+key.</p></li>
+<li><p><strong>Document</strong> internal cert renewal
+calendar.</p></li>
+</ol>
+<h3 id="prerequisites-4">Prerequisites</h3>
+<ul>
+<li>Budget for certificates<br />
+</li>
+<li>Legal entity for Apple/Microsoft developer accounts</li>
+</ul>
+<p><strong>Effort:</strong> 2–5 days (+ procurement)</p>
+<hr />
+<h2 id="r16-document-local-vs-cloud-mode">R16 — Document Local vs Cloud
+Mode</h2>
+<h3 id="objective-14">Objective</h3>
+<p>Reduce operator error for replication, sync, and conflict
+behavior.</p>
+<h3 id="implementation-steps-15">Implementation Steps</h3>
+<ol type="1">
+<li><p><strong>Create <code>docs/OPERATOR_GUIDE.md</code>:</strong></p>
+<ul>
+<li>When to use cloud vs local<br />
+</li>
+<li>First-time setup: full replication<br />
+</li>
+<li>Auto-sync interval meaning<br />
+</li>
+<li>What happens if cloud unavailable<br />
+</li>
+<li>Conflict policy (last-write-wins from sync_engine)</li>
+</ul></li>
+<li><p><strong>Embed summary in
+<code>backend/ui/manual.html</code></strong> (in-app).</p></li>
+<li><p><strong>Add tooltips</strong> in <code>settings_dialog.py</code>
+next to mode toggle.</p></li>
+</ol>
+<p><strong>Effort:</strong> 1 day</p>
+<hr />
+<h2 id="r17-enable-sqlite-foreign-keys-local-mode">R17 — Enable SQLite
+Foreign Keys (Local Mode)</h2>
+<h3 id="objective-15">Objective</h3>
+<p>Improve referential integrity in offline DB.</p>
+<h3 id="implementation-steps-16">Implementation Steps</h3>
+<ol type="1">
+<li><p><strong>Review <code>sync_engine.py</code></strong> — why
+<code>PRAGMA foreign_keys=OFF</code> was set; fix ordering if that was
+the reason.</p></li>
+<li><p><strong>Change <code>database.py</code>
+<code>_get_local_connection</code>:</strong></p></li>
+</ol>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>conn.execute(<span class="st">&quot;PRAGMA foreign_keys=ON&quot;</span>)</span></code></pre></div>
+<ol start="3" type="1">
+<li><p><strong>Run full replication test</strong> — import 27 tables;
+verify no FK violations.</p></li>
+<li><p><strong>Add migration</strong> for existing local DBs: VACUUM /
+re-replicate option in settings.</p></li>
+</ol>
+<h3 id="risks-5">Risks</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 66%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Sync inserts out of order</td>
+<td>Fix sync_engine table order; keep OFF only during bulk import
+transaction</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 1–2 days</p>
+<hr />
+<h2 id="r18-thin-api-layer-long-term">R18 — Thin API Layer
+(Long-Term)</h2>
+<h3 id="objective-16">Objective</h3>
+<p>Move auth, destructive ops, and audit to a server API instead of
+direct MySQL from desktop.</p>
+<h3 id="phased-approach">Phased Approach</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Phase</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>OpenAPI spec for login, beneficiary CRUD, sync</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>FastAPI service (reuse trimmed deps) behind HTTPS + JWT</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>Desktop <code>database.py</code> → HTTP client adapter</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>Deprecate direct MySQL credentials in binary</td>
+</tr>
+</tbody>
+</table>
+<h3 id="prerequisites-5">Prerequisites</h3>
+<ul>
+<li>Hosting, TLS, API auth design<br />
+</li>
+<li>Web team alignment</li>
+</ul>
+<p><strong>Effort:</strong> 15+ days — separate project charter</p>
+<hr />
+<h2 id="r19-audit-trail-table">R19 — Audit Trail Table</h2>
+<h3 id="objective-17">Objective</h3>
+<p>Accountability for sync, delete, add, and role-gated actions.</p>
+<h3 id="implementation-steps-17">Implementation Steps</h3>
+<ol type="1">
+<li><strong>DB migration:</strong></li>
+</ol>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> desktop_audit_log (</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> BIGINT AUTO_INCREMENT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  user_id <span class="dt">VARCHAR</span>(<span class="dv">50</span>),</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  action <span class="dt">VARCHAR</span>(<span class="dv">50</span>),</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  entity_type <span class="dt">VARCHAR</span>(<span class="dv">50</span>),</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  entity_id <span class="dt">VARCHAR</span>(<span class="dv">50</span>),</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>  details JSON,</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>  created_at DATETIME <span class="kw">DEFAULT</span> <span class="fu">CURRENT_TIMESTAMP</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Add <code>backend/core/audit.py</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> log_action(user_id, action, entity_type, entity_id, details<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    ...</span></code></pre></div>
+<ol start="3" type="1">
+<li><p><strong>Call from:</strong> delete, add_beneficiary,
+sync_baseline, bulk_transfer (after R3).</p></li>
+<li><p><strong>Admin viewer</strong> — optional future web report; out
+of scope for v1.</p></li>
+</ol>
+<h3 id="dependencies">Dependencies</h3>
+<ul>
+<li>R3 (know <code>user_id</code> on each action)<br />
+</li>
+<li>Optional R18 for centralized API logging</li>
+</ul>
+<p><strong>Effort:</strong> 3–5 days</p>
+<hr />
+<h2 id="r20-encrypted-runtime-config-not-compiled-secrets">R20 —
+Encrypted Runtime Config (Not Compiled Secrets)</h2>
+<h3 id="objective-18">Objective</h3>
+<p>Avoid baking <code>CLOUD_DB_PASSWORD</code> into PyInstaller binary
+where possible.</p>
+<h3 id="implementation-steps-18">Implementation Steps</h3>
+<ol type="1">
+<li><p><strong>First-login cloud setup wizard</strong> — prompt admin
+for DB credentials once; store with OS keyring:</p>
+<ul>
+<li>Windows: <code>keyring</code> + Credential Manager<br />
+</li>
+<li>macOS: Keychain<br />
+</li>
+<li>Linux: Secret Service</li>
+</ul></li>
+<li><p><strong>CI builds</strong> — use ephemeral injection only for QA
+builds; production users enter creds OR use OAuth-only API
+(R18).</p></li>
+<li><p><strong>Remove <code>_config.py</code> from binary</strong> —
+load at runtime from keyring.</p></li>
+<li><p><strong>Migration:</strong> Existing installs keep working until
+re-setup.</p></li>
+</ol>
+<h3 id="files-to-change-13">Files to Change</h3>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend/core/secrets_store.py</code></td>
+<td><strong>New</strong> — keyring wrapper</td>
+</tr>
+<tr class="even">
+<td><code>backend/core/_config.py</code></td>
+<td>Fallback dev-only</td>
+</tr>
+<tr class="odd">
+<td><code>backend/scripts/inject_config.py</code></td>
+<td>QA builds only</td>
+</tr>
+<tr class="even">
+<td><code>backend/ui/setup_wizard.py</code></td>
+<td><strong>New</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort:</strong> 5–8 days — pairs with R18 long-term</p>
+<hr />
+<h2 id="suggested-delivery-sprints">Suggested Delivery Sprints</h2>
+<h3 id="sprint-1-week-1-p0-security-correctness">Sprint 1 (Week 1) — P0
+Security &amp; Correctness</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Day</th>
+<th>Items</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>R1, R5</td>
+</tr>
+<tr class="even">
+<td>2–4</td>
+<td>R2</td>
+</tr>
+<tr class="odd">
+<td>3–5</td>
+<td>R3 (parallel, needs matrix day 1)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sprint-2-week-2-p0p1-foundation">Sprint 2 (Week 2) — P0/P1
+Foundation</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Day</th>
+<th>Items</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1–3</td>
+<td>R4 (with DBA)</td>
+</tr>
+<tr class="even">
+<td>2–4</td>
+<td>R6</td>
+</tr>
+<tr class="odd">
+<td>4–5</td>
+<td>R8, R10, R11</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sprint-3-weeks-34-quality-performance">Sprint 3 (Weeks 3–4) —
+Quality &amp; Performance</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Items</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R9, R7 (phase 1–2), R12 (core tests), R13, R14</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sprint-4-ops-architecture">Sprint 4+ — Ops &amp;
+Architecture</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Items</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R15, R16, R17, then R19, R18/R20 as program</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="appendix-quick-reference-files-by-recommendation">Appendix —
+Quick Reference: Files by Recommendation</h2>
+<table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 76%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Rec</th>
+<th>Primary files</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R1</td>
+<td><code>ui/main_window.py</code></td>
+</tr>
+<tr class="even">
+<td>R2</td>
+<td><code>core/updater.py</code>, <code>ui/main_window.py</code>,
+<code>.github/workflows/build.yml</code></td>
+</tr>
+<tr class="odd">
+<td>R3</td>
+<td><code>core/permissions.py</code>, <code>ui/auth_guard.py</code>,
+<code>ui/main_window.py</code>, dialogs</td>
+</tr>
+<tr class="even">
+<td>R4</td>
+<td><code>core/database.py</code>, <code>core/password_utils.py</code>,
+<code>scripts/migrate_access_codes.py</code></td>
+</tr>
+<tr class="odd">
+<td>R5</td>
+<td><code>ui/login_window.py</code></td>
+</tr>
+<tr class="even">
+<td>R6</td>
+<td><code>core/logging_config.py</code>, <code>app.py</code>, all
+<code>backend/**/*.py</code></td>
+</tr>
+<tr class="odd">
+<td>R7</td>
+<td><code>ui/main_window.py</code>, <code>ui/controllers/*</code></td>
+</tr>
+<tr class="even">
+<td>R8</td>
+<td><code>core/database.py</code>, <code>parser.py</code>,
+<code>workers.py</code></td>
+</tr>
+<tr class="odd">
+<td>R9</td>
+<td><code>core/database.py</code>, <code>workers.py</code></td>
+</tr>
+<tr class="even">
+<td>R10</td>
+<td><code>requirements.txt</code></td>
+</tr>
+<tr class="odd">
+<td>R11</td>
+<td><code>core/database.py</code></td>
+</tr>
+<tr class="even">
+<td>R12</td>
+<td><code>backend/tests/</code></td>
+</tr>
+<tr class="odd">
+<td>R13</td>
+<td><code>.github/workflows/quality.yml</code></td>
+</tr>
+<tr class="even">
+<td>R14</td>
+<td><code>pyrightconfig.json</code></td>
+</tr>
+<tr class="odd">
+<td>R15</td>
+<td><code>.github/workflows/build.yml</code>,
+<code>scripts/windows_setup.iss</code></td>
+</tr>
+<tr class="even">
+<td>R16</td>
+<td><code>docs/OPERATOR_GUIDE.md</code>,
+<code>ui/manual.html</code></td>
+</tr>
+<tr class="odd">
+<td>R17</td>
+<td><code>core/database.py</code>, <code>core/sync_engine.py</code></td>
+</tr>
+<tr class="even">
+<td>R18</td>
+<td>New API service (separate repo or <code>backend/api/</code>)</td>
+</tr>
+<tr class="odd">
+<td>R19</td>
+<td><code>core/audit.py</code>, DB migration</td>
+</tr>
+<tr class="even">
+<td>R20</td>
+<td><code>core/secrets_store.py</code>,
+<code>ui/setup_wizard.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>End of implementation plans document.</em></p>
+</body>
+</html>

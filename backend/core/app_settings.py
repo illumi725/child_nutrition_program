@@ -3,9 +3,12 @@ App settings manager.
 Reads/writes a JSON file in the OS-appropriate AppData directory.
 Manages mode (cloud/local) and auto-sync settings.
 """
-import os
 import json
+import logging
+import os
 import sys
+
+logger = logging.getLogger(__name__)
 
 APP_NAME = "HAPAGComparator"
 
@@ -30,7 +33,8 @@ def _load() -> dict:
     try:
         with open(path, 'r') as f:
             return json.load(f)
-    except Exception:
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Could not load app settings from %s: %s", path, exc)
         return {}
 
 def _save(data: dict):

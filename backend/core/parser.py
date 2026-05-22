@@ -1,11 +1,14 @@
+import logging
 import os
 import re
 import datetime
 import pandas as pd
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz
 from typing import List, Dict, Any
 
 from core.database import get_db_connection
+
+logger = logging.getLogger(__name__)
 
 try:
     from anthro_utils import calculate_anthro_stats
@@ -108,7 +111,8 @@ def calculate_match_score(excel_rec, db_rec):
                 y2, m2, d2 = db_bd.split('-')
                 if y1 == y2 and m1 == d2 and d1 == m2:
                     is_swap = True
-            except: pass
+            except (ValueError, IndexError):
+                pass
             
         if is_swap:
             score -= 5
@@ -136,7 +140,8 @@ def safe_float(val):
     try:
         if pd.isna(val): return None
         return round(float(val), 2)
-    except: return None
+    except (ValueError, TypeError):
+        return None
 
 def parse_date_collected(df_header):
     if len(df_header) > 9:
@@ -150,13 +155,16 @@ def parse_date_collected(df_header):
                         raw = parts[1].split('MIDLINE')[0].split('ENDLINE')[0].strip()
                         clean = raw.replace('_', '').replace('\n', ' ').strip()
                         if clean:
-                            try: return pd.to_datetime(clean).strftime('%Y-%m-%d')
-                            except:
+                            try:
+                                return pd.to_datetime(clean).strftime('%Y-%m-%d')
+                            except (ValueError, TypeError):
                                 try:
                                     import dateparser
                                     dt = dateparser.parse(clean)
-                                    if dt: return dt.strftime('%Y-%m-%d')
-                                except: pass
+                                    if dt:
+                                        return dt.strftime('%Y-%m-%d')
+                                except (ValueError, TypeError):
+                                    pass
     return None
 
 def parse_form_5a(file_path: str, surname_dict=None) -> List[Dict[str, Any]]:
@@ -191,7 +199,8 @@ def parse_form_5a(file_path: str, surname_dict=None) -> List[Dict[str, Any]]:
                             val = str(row.tolist()[idx+1]).strip()
                             excel_batch = int(re.search(r'(\d+)', val).group(1))
                             break
-                        except: pass
+                        except (ValueError, TypeError, AttributeError):
+                            pass
 
         date_collected = parse_date_collected(df_temp)
         header_row_index = -1
@@ -217,13 +226,10 @@ def parse_form_5a(file_path: str, surname_dict=None) -> List[Dict[str, Any]]:
 
         sites_cache = []
         try:
-            from core.database import get_db_connection
-            conn = get_db_connection()
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT site_id, site_name, batch, barangay_name, citymun_name, province_name FROM sites s LEFT JOIN barangays br ON s.barangay_code = br.barangay_code LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code LEFT JOIN provinces p ON s.province_code = p.province_code")
-                sites_cache = cursor.fetchall()
-            conn.close()
-        except: pass
+            from core.database import fetch_sites_cache
+            sites_cache = fetch_sites_cache()
+        except Exception:
+            pass
 
         start_idx = 2 if weight_col or height_col else 0
         for act_idx in range(start_idx, len(df)):
@@ -241,8 +247,10 @@ def parse_form_5a(file_path: str, surname_dict=None) -> List[Dict[str, Any]]:
             raw_bday = row.get(birthday_col)
             bday_str = None
             if pd.notna(raw_bday):
-                try: bday_str = pd.to_datetime(raw_bday).strftime('%Y-%m-%d')
-                except: bday_str = str(raw_bday)
+                try:
+                    bday_str = pd.to_datetime(raw_bday).strftime('%Y-%m-%d')
+                except (ValueError, TypeError):
+                    bday_str = str(raw_bday)
 
             ex_rec = {
                 "stable_id": f"{os.path.basename(file_path)}_{header_row_index + act_idx + 2}",
@@ -266,12 +274,13 @@ def parse_form_5a(file_path: str, surname_dict=None) -> List[Dict[str, Any]]:
                     c_dt = datetime.datetime.strptime(date_collected, '%Y-%m-%d').date() if date_collected else datetime.date.today()
                     months = (c_dt.year - b_dt.year) * 12 + c_dt.month - b_dt.month
                     anthro_preview = calculate_anthro_stats(months, gender, ex_rec['weight'], ex_rec['height'])
-                except: pass
+                except (ValueError, TypeError):
+                    pass
             ex_rec['anthro_preview'] = anthro_preview
             ex_rec['suggested_site_id'] = get_best_site_suggestion(ex_rec, sites_cache)
             records.append(ex_rec)
     except Exception as e:
-        print(f"[RE-ERROR] Parser: {str(e)}")
+        logger.error("parse_form_5a failed for %s: %s", file_path, e, exc_info=True)
     return records
 
 def evaluate_match(ex, db_r, sites_cache=None):

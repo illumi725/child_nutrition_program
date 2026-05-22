@@ -6,6 +6,7 @@ client_secrets.json
 __pycache__/
 *.py[cod]
 venv/
+.venv/
 .env
 
 # PyInstaller build files

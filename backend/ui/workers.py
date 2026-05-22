@@ -1,6 +1,9 @@
+import logging
 import os
 import sys
 from PySide6.QtCore import QThread, Signal
+
+logger = logging.getLogger(__name__)
 from core.database import fetch_beneficiaries
 from core.parser import parse_form_5a, evaluate_match, get_best_site_suggestion, clean_name
 from core.database import get_db_connection
@@ -46,12 +49,9 @@ class ScanWorker(QThread):
             self.progress.emit(50, "Loading sites cache...")
             sites_cache = []
             try:
-                conn = get_db_connection()
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT site_id, site_name, batch, barangay_name, citymun_name, province_name FROM sites s LEFT JOIN barangays br ON s.barangay_code = br.barangay_code LEFT JOIN cities_municipalities cm ON s.citymun_code = cm.citymun_code LEFT JOIN provinces p ON s.province_code = p.province_code")
-                    sites_cache = cursor.fetchall()
-                conn.close()
-            except:
+                from core.database import fetch_sites_cache
+                sites_cache = fetch_sites_cache()
+            except Exception:
                 pass
 
             self.progress.emit(60, "Grouping database records...")
@@ -85,7 +85,7 @@ class ScanWorker(QThread):
                             try:
                                 st = os.stat(fp)
                                 parts.append(f"{fp}:{st.st_size}:{int(st.st_mtime)}")
-                            except:
+                            except OSError:
                                 pass
                 parts.sort()  # sort globally for stable hash
                 return hashlib.md5("\n".join(parts).encode()).hexdigest()
@@ -261,7 +261,8 @@ class ScanWorker(QThread):
                     try:
                         y, m, d = ex_bd.split('-')
                         ex_bd_swapped = f"{y}-{d}-{m}"
-                    except: pass
+                    except (ValueError, IndexError):
+                        pass
                     
                 candidates_list = db_by_bday.get(ex_bd, []) + db_by_lname.get(ex_ln, [])
                 if ex_bd_swapped:
@@ -466,7 +467,7 @@ class GlobalStatsWorker(QThread):
                 with open(GlobalStatsWorker.CACHE_PATH, 'w', encoding='utf-8') as f:
                     json.dump(GlobalStatsWorker._serialize(result), f, ensure_ascii=False)
             except Exception as cache_err:
-                print(f"[CACHE-WARN] Could not save cache: {cache_err}")
+                logger.warning("Could not save global stats cache: %s", cache_err)
 
             self.progress.emit(100, "Done!")
             self.finished.emit(result)

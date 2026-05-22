@@ -301,6 +301,19 @@ class BulkTransferWindow(QDialog):
             from core.database import bulk_transfer_beneficiaries
             success, err = bulk_transfer_beneficiaries(beneficiary_ids, target_site_id)
             if success:
+                parent = self.parent()
+                if parent and getattr(parent, "current_user", None):
+                    from core.audit import audit_user_id, log_action
+                    log_action(
+                        audit_user_id(parent.current_user),
+                        "bulk_transfer",
+                        "site",
+                        entity_id=target_site_id,
+                        details={
+                            "count": len(beneficiary_ids),
+                            "target_site": target_site_name,
+                        },
+                    )
                 QMessageBox.information(
                     self, "Success",
                     f"Successfully relocated {len(beneficiary_ids)} beneficiary(ies) to {target_site_name}."

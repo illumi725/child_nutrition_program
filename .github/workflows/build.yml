@@ -188,6 +188,16 @@ jobs:
         with:
           merge-multiple: true
 
+      - name: Generate SHA256 checksums
+        run: |
+          sha256sum hapag_comparator_linux_*.tar.gz \
+            hapag_comparator_windows_*.zip \
+            hapag_comparator_macos_*.zip \
+            hapag_comparator_macos_*.dmg \
+            backend/dist/hapag_comparator_windows_setup_*.exe \
+            > checksums.txt 2>/dev/null || true
+          cat checksums.txt || echo "no checksums generated"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -200,3 +210,4 @@ jobs:
             backend/dist/hapag_comparator_windows_setup_*.exe
             hapag_comparator_macos_*.zip
             hapag_comparator_macos_*.dmg
+            checksums.txt

@@ -1,6 +1,9 @@
+import logging
 import math
 import json
 import os
+
+logger = logging.getLogger(__name__)
 
 # Load Consolidated WHO LMS data
 WHO_DATA = {}
@@ -9,7 +12,7 @@ try:
     with open(data_path, "r") as f:
         WHO_DATA = json.load(f)
 except Exception as e:
-    print(f"Warning: Could not load WHO Standards data: {e}")
+    logger.warning("Could not load WHO Standards data: %s", e)
 
 def get_lms(indicator, gender, x_val):
     """
@@ -64,7 +67,8 @@ def compute_z_score(val, L, M, S):
             
             if z > 3: z = 3 + (val - sd3pos) / (sd3pos - sd2pos)
             elif z < -3: z = -3 + (val - sd3neg) / (sd2neg - sd3neg)
-        except: pass
+        except (ValueError, TypeError, ZeroDivisionError):
+            pass
     return z
 
 def calculate_anthro_stats(age_in_months, gender_str, weight, height):
