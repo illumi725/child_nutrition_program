@@ -1,0 +1,2280 @@
+[
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 44,
+      "row": 8
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/check_users.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 8
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 8,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 3
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/_config.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 3
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 5,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 4
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/_config.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 4
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 5,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 12
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 12
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 18,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 98,
+      "row": 22
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 22
+    },
+    "message": "Line too long (97 > 88)",
+    "noqa_row": 39,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 93,
+      "row": 105
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 105
+    },
+    "message": "Line too long (92 > 88)",
+    "noqa_row": 105,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 107,
+      "row": 108
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 108
+    },
+    "message": "Line too long (106 > 88)",
+    "noqa_row": 108,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 111
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 111
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 111,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 129,
+      "row": 114
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 114
+    },
+    "message": "Line too long (128 > 88)",
+    "noqa_row": 114,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 97,
+      "row": 120
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 120
+    },
+    "message": "Line too long (96 > 88)",
+    "noqa_row": 120,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 119,
+      "row": 123
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 123
+    },
+    "message": "Line too long (118 > 88)",
+    "noqa_row": 123,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 97,
+      "row": 126
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 126
+    },
+    "message": "Line too long (96 > 88)",
+    "noqa_row": 126,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 94,
+      "row": 290
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 290
+    },
+    "message": "Line too long (93 > 88)",
+    "noqa_row": 290,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 112,
+      "row": 292
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 292
+    },
+    "message": "Line too long (111 > 88)",
+    "noqa_row": 292,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 90,
+      "row": 335
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 335
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 339,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 109,
+      "row": 476
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 476
+    },
+    "message": "Line too long (108 > 88)",
+    "noqa_row": 478,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 108,
+      "row": 484
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 484
+    },
+    "message": "Line too long (107 > 88)",
+    "noqa_row": 484,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 114,
+      "row": 490
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 490
+    },
+    "message": "Line too long (113 > 88)",
+    "noqa_row": 490,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 146,
+      "row": 604
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 604
+    },
+    "message": "Line too long (145 > 88)",
+    "noqa_row": 606,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 90,
+      "row": 650
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 650
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 655,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 90,
+      "row": 654
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 654
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 655,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 703
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 703
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 703,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 94,
+      "row": 715
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 715
+    },
+    "message": "Line too long (93 > 88)",
+    "noqa_row": 715,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 91,
+      "row": 748
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 748
+    },
+    "message": "Line too long (90 > 88)",
+    "noqa_row": 750,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 131,
+      "row": 759
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 759
+    },
+    "message": "Line too long (130 > 88)",
+    "noqa_row": 768,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 129,
+      "row": 760
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 760
+    },
+    "message": "Line too long (128 > 88)",
+    "noqa_row": 768,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 143,
+      "row": 761
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 761
+    },
+    "message": "Line too long (142 > 88)",
+    "noqa_row": 768,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 128,
+      "row": 762
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 762
+    },
+    "message": "Line too long (127 > 88)",
+    "noqa_row": 768,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 130,
+      "row": 763
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 763
+    },
+    "message": "Line too long (129 > 88)",
+    "noqa_row": 768,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 100,
+      "row": 794
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/database.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 794
+    },
+    "message": "Line too long (99 > 88)",
+    "noqa_row": 794,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 101,
+      "row": 33
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/excel_updater.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 33
+    },
+    "message": "Line too long (100 > 88)",
+    "noqa_row": 33,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 31,
+      "row": 46
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/excel_updater.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 47
+          },
+          "location": {
+            "column": 1,
+            "row": 46
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `header_row_idx`"
+    },
+    "location": {
+      "column": 17,
+      "row": 46
+    },
+    "message": "Local variable `header_row_idx` is assigned to but never used",
+    "noqa_row": 46,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 90,
+      "row": 74
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/parser.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 74
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 74,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 157,
+      "row": 141
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/parser.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 141
+    },
+    "message": "Line too long (156 > 88)",
+    "noqa_row": 141,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 164,
+      "row": 144
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/parser.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 144
+    },
+    "message": "Line too long (163 > 88)",
+    "noqa_row": 144,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 96,
+      "row": 316
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/parser.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 316
+    },
+    "message": "Line too long (95 > 88)",
+    "noqa_row": 316,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 43,
+      "row": 10
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/sync_engine.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 10
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 10,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 149
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/sync_engine.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 149
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 149,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 17,
+      "row": 168
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/sync_engine.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 20,
+            "row": 168
+          },
+          "location": {
+            "column": 9,
+            "row": 168
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `nullable`"
+    },
+    "location": {
+      "column": 9,
+      "row": 168
+    },
+    "message": "Local variable `nullable` is assigned to but never used",
+    "noqa_row": 168,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 17,
+      "row": 236
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/sync_engine.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 20,
+            "row": 236
+          },
+          "location": {
+            "column": 5,
+            "row": 236
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `update_parts`"
+    },
+    "location": {
+      "column": 5,
+      "row": 236
+    },
+    "message": "Local variable `update_parts` is assigned to but never used",
+    "noqa_row": 236,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 117,
+      "row": 248
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/sync_engine.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 248
+    },
+    "message": "Line too long (116 > 88)",
+    "noqa_row": 248,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 117,
+      "row": 198
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/core/updater.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 198
+    },
+    "message": "Line too long (116 > 88)",
+    "noqa_row": 198,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 93,
+      "row": 24
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/scripts/inject_config.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 24
+    },
+    "message": "Line too long (92 > 88)",
+    "noqa_row": 24,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 127,
+      "row": 50
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/scripts/inject_config.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 50
+    },
+    "message": "Line too long (126 > 88)",
+    "noqa_row": 50,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 48,
+      "row": 13
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/test_db.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 13
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 13,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 52
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/bulk_transfer_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 52
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 52,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 109,
+      "row": 316
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/bulk_transfer_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 316
+    },
+    "message": "Line too long (108 > 88)",
+    "noqa_row": 316,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 110,
+      "row": 356
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/bulk_transfer_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 356
+    },
+    "message": "Line too long (109 > 88)",
+    "noqa_row": 356,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 112,
+      "row": 222
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/data_grid.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 222
+    },
+    "message": "Line too long (111 > 88)",
+    "noqa_row": 222,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 111,
+      "row": 64
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/db_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 64
+    },
+    "message": "Line too long (110 > 88)",
+    "noqa_row": 64,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 110,
+      "row": 117
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/db_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 117
+    },
+    "message": "Line too long (109 > 88)",
+    "noqa_row": 117,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 93,
+      "row": 291
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/db_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 291
+    },
+    "message": "Line too long (92 > 88)",
+    "noqa_row": 291,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 340
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/db_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 340
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 340,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 102,
+      "row": 355
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/db_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 355
+    },
+    "message": "Line too long (101 > 88)",
+    "noqa_row": 355,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 44
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 44
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 45,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 104,
+      "row": 92
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 92
+    },
+    "message": "Line too long (103 > 88)",
+    "noqa_row": 92,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 117,
+      "row": 93
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 93
+    },
+    "message": "Line too long (116 > 88)",
+    "noqa_row": 93,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 90,
+      "row": 216
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 216
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 216,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 245
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 245
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 245,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 277
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 277
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 277,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 108,
+      "row": 311
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 88,
+      "row": 311
+    },
+    "message": "Line too long (108 > 88)",
+    "noqa_row": 311,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 102,
+      "row": 328
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 328
+    },
+    "message": "Line too long (101 > 88)",
+    "noqa_row": 328,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 329
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/excel_duplicate_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 329
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 329,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 89,
+      "row": 147
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/settings_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 88,
+      "row": 147
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 147,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 103,
+      "row": 154
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/components/settings_dialog.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 154
+    },
+    "message": "Line too long (102 > 88)",
+    "noqa_row": 154,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 97,
+      "row": 1
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/discrepancy_action_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 1
+    },
+    "message": "Line too long (96 > 88)",
+    "noqa_row": 1,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 208
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/discrepancy_action_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 208
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 208,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 110,
+      "row": 252
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/discrepancy_action_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 252
+    },
+    "message": "Line too long (109 > 88)",
+    "noqa_row": 252,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 93,
+      "row": 80
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 80
+    },
+    "message": "Line too long (92 > 88)",
+    "noqa_row": 80,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 106,
+      "row": 97
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 97
+    },
+    "message": "Line too long (105 > 88)",
+    "noqa_row": 97,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 110
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 110
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 110,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E712",
+    "end_location": {
+      "column": 27,
+      "row": 155
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/duplicate_controller.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "not confirm",
+          "end_location": {
+            "column": 27,
+            "row": 155
+          },
+          "location": {
+            "column": 12,
+            "row": 155
+          }
+        }
+      ],
+      "message": "Replace with `not confirm`"
+    },
+    "location": {
+      "column": 12,
+      "row": 155
+    },
+    "message": "Avoid inequality comparisons to `True`; use `not confirm:` for false checks",
+    "noqa_row": 155,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/true-false-comparison"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 90,
+      "row": 32
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/excel_duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 32
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 32,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 66
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/excel_duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 66
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 66,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 94
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/excel_duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 94
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 94,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 108,
+      "row": 130
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/excel_duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 88,
+      "row": 130
+    },
+    "message": "Line too long (108 > 88)",
+    "noqa_row": 130,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 102,
+      "row": 146
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/excel_duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 146
+    },
+    "message": "Line too long (101 > 88)",
+    "noqa_row": 146,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 147
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/excel_duplicate_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 147
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 147,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 126,
+      "row": 45
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/file_explorer_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 45
+    },
+    "message": "Line too long (125 > 88)",
+    "noqa_row": 45,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 90,
+      "row": 51
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/file_explorer_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 51
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 51,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 107,
+      "row": 87
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/layout_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 87
+    },
+    "message": "Line too long (106 > 88)",
+    "noqa_row": 87,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 75
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/navigation_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 75
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 75,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 110,
+      "row": 89
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/resolution_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 89
+    },
+    "message": "Line too long (109 > 88)",
+    "noqa_row": 89,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 90,
+      "row": 63
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/scan_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 63
+    },
+    "message": "Line too long (89 > 88)",
+    "noqa_row": 63,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 91,
+      "row": 73
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/sync_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 73
+    },
+    "message": "Line too long (90 > 88)",
+    "noqa_row": 73,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 91,
+      "row": 132
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/sync_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 132
+    },
+    "message": "Line too long (90 > 88)",
+    "noqa_row": 132,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 117,
+      "row": 374
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/sync_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 374
+    },
+    "message": "Line too long (116 > 88)",
+    "noqa_row": 374,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 507
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/sync_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 507
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 507,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 93,
+      "row": 517
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/sync_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 517
+    },
+    "message": "Line too long (92 > 88)",
+    "noqa_row": 517,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 1
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/controllers/update_check_controller.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 1
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 1,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 2,
+      "row": 20
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/dashboard_window.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 7
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 7,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 38,
+      "row": 21
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/dashboard_window.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 21
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 21,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 34,
+      "row": 22
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/dashboard_window.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 22
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 22,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 41,
+      "row": 23
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/dashboard_window.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 23
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 23,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 93,
+      "row": 184
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/dashboard_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 184
+    },
+    "message": "Line too long (92 > 88)",
+    "noqa_row": 184,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 91,
+      "row": 192
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/dashboard_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 192
+    },
+    "message": "Line too long (90 > 88)",
+    "noqa_row": 192,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 207
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/dashboard_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 207
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 207,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 102,
+      "row": 385
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/dashboard_window.py",
+    "fix": null,
+    "location": {
+      "column": 88,
+      "row": 385
+    },
+    "message": "Line too long (102 > 88)",
+    "noqa_row": 385,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 167
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/login_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 167
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 167,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 333
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/login_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 333
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 336,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 378
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/login_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 378
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 381,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 651
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/login_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 651
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 651,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 106,
+      "row": 690
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/login_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 690
+    },
+    "message": "Line too long (105 > 88)",
+    "noqa_row": 690,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 95,
+      "row": 57
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/main_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 57
+    },
+    "message": "Line too long (94 > 88)",
+    "noqa_row": 57,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 107,
+      "row": 112
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/main_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 112
+    },
+    "message": "Line too long (106 > 88)",
+    "noqa_row": 112,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 125,
+      "row": 332
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/main_window.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 332
+    },
+    "message": "Line too long (124 > 88)",
+    "noqa_row": 332,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 103,
+      "row": 182
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/search_window.py",
+    "fix": null,
+    "location": {
+      "column": 88,
+      "row": 182
+    },
+    "message": "Line too long (103 > 88)",
+    "noqa_row": 182,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 97,
+      "row": 11
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/theme.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 11
+    },
+    "message": "Line too long (96 > 88)",
+    "noqa_row": 11,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 109,
+      "row": 115
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/theme.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 115
+    },
+    "message": "Line too long (108 > 88)",
+    "noqa_row": 115,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 123,
+      "row": 136
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/theme.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 136
+    },
+    "message": "Line too long (122 > 88)",
+    "noqa_row": 249,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 188,
+      "row": 202
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/theme.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 202
+    },
+    "message": "Line too long (187 > 88)",
+    "noqa_row": 249,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 46,
+      "row": 7
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 7
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 7,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 2,
+      "row": 13
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 8
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 8,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 115,
+      "row": 120
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 120
+    },
+    "message": "Line too long (114 > 88)",
+    "noqa_row": 120,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 108,
+      "row": 135
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 88,
+      "row": 135
+    },
+    "message": "Line too long (108 > 88)",
+    "noqa_row": 135,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 103,
+      "row": 159
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 159
+    },
+    "message": "Line too long (102 > 88)",
+    "noqa_row": 159,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 98,
+      "row": 187
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 187
+    },
+    "message": "Line too long (97 > 88)",
+    "noqa_row": 187,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 96,
+      "row": 204
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 88,
+      "row": 204
+    },
+    "message": "Line too long (96 > 88)",
+    "noqa_row": 204,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 92,
+      "row": 258
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 258
+    },
+    "message": "Line too long (91 > 88)",
+    "noqa_row": 258,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 93,
+      "row": 263
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 263
+    },
+    "message": "Line too long (92 > 88)",
+    "noqa_row": 263,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 107,
+      "row": 360
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 360
+    },
+    "message": "Line too long (106 > 88)",
+    "noqa_row": 360,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 99,
+      "row": 369
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 369
+    },
+    "message": "Line too long (98 > 88)",
+    "noqa_row": 369,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 110,
+      "row": 378
+    },
+    "filename": "/media/heathcliff/MyFiles/HAPAG APPROVED BASELINE-20260410T035243Z-3-001/backend/ui/workers.py",
+    "fix": null,
+    "location": {
+      "column": 89,
+      "row": 378
+    },
+    "message": "Line too long (109 > 88)",
+    "noqa_row": 378,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  }
+]

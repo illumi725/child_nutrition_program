@@ -2,9 +2,8 @@
 
 Moves the sync worker lifecycle out of the UI dialog so it is testable.
 """
-from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations
 
 
 class SettingsController:
@@ -15,7 +14,10 @@ class SettingsController:
     def start_sync(self, mode: str):
         from core.sync_engine import SyncWorker
 
-        if self._sync_worker and getattr(self._sync_worker, 'isRunning', lambda: False)():
+        if (
+            self._sync_worker
+            and getattr(self._sync_worker, "isRunning", lambda: False)()
+        ):
             return
 
         dlg = self.dialog
@@ -26,7 +28,7 @@ class SettingsController:
         dlg.btn_full_replicate.setEnabled(False)
         dlg.btn_save.setEnabled(False)
 
-        worker_mode = SyncWorker.MODE_FULL if mode == 'full' else SyncWorker.MODE_SYNC
+        worker_mode = SyncWorker.MODE_FULL if mode == "full" else SyncWorker.MODE_SYNC
         self._sync_worker = SyncWorker(mode=worker_mode, parent=dlg)
         # hook up to dialog handlers (keeps UI methods intact)
         try:

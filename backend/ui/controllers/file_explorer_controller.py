@@ -1,4 +1,5 @@
 """Controller for file explorer and index management actions."""
+
 from __future__ import annotations
 
 
@@ -27,7 +28,7 @@ class FileExplorerController:
         import sys
         import os
 
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, "frozen", False):
             base = os.path.dirname(sys.executable)
         else:
             base = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -35,15 +36,17 @@ class FileExplorerController:
 
         if os.path.exists(cache_path):
             os.remove(cache_path)
-            self._win.log_message("🗂 Inter-file index cache cleared. It will be rebuilt on the next scan.")
+            self._win.log_message(
+                "🗂 Inter-file index cache cleared. It will be rebuilt on the next scan."
+            )
             QMessageBox.information(
                 self._win,
                 "Index Cleared",
-                "The inter-file duplicate index cache has been cleared.\nIt will be rebuilt automatically on the next scan.",
+                "The inter-file duplicate index cache has been cleared.\nIt will be rebuilt automatically on the next scan.",  # noqa: E501
             )
         else:
             QMessageBox.information(
                 self._win,
                 "No Cache",
-                "No cached index found. The index will be built fresh on the next scan.",
+                "No cached index found. The index will be built fresh on the next scan.",  # noqa: E501
             )

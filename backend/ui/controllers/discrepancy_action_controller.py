@@ -1,4 +1,5 @@
-"""Controller for discrepancy and missing data actions extracted from RecordActionController."""
+"""Controller for discrepancy and missing data actions extracted from RecordActionController."""  # noqa: E501
+
 from __future__ import annotations
 
 from typing import Any
@@ -8,7 +9,9 @@ class DiscrepancyActionController:
     def __init__(self, main_window):
         self._win = main_window
 
-    def on_missing_db_action(self, action_name: str, record_data: dict, action_widget: Any):
+    def on_missing_db_action(
+        self, action_name: str, record_data: dict, action_widget: Any
+    ):
         from core.database import add_beneficiary_to_db, get_sites
         from ui.components.edit_beneficiary_dialog import EditBeneficiaryDialog
         from PySide6.QtWidgets import QMessageBox
@@ -22,7 +25,11 @@ class DiscrepancyActionController:
 
         sites = get_sites()
         if not sites:
-            QMessageBox.warning(self._win, "Error", "No feeding sites found in the database. Cannot add.")
+            QMessageBox.warning(
+                self._win,
+                "Error",
+                "No feeding sites found in the database. Cannot add.",
+            )
             return
 
         dialog = EditBeneficiaryDialog(record_data, sites, self._win)
@@ -30,7 +37,9 @@ class DiscrepancyActionController:
             return
 
         final_data = dialog.get_data()
-        created_by = self._win.current_user["user_id"] if self._win.current_user else "system"
+        created_by = (
+            self._win.current_user["user_id"] if self._win.current_user else "system"
+        )
 
         success, msg = add_beneficiary_to_db(
             site_id=final_data["site_id"],
@@ -57,9 +66,15 @@ class DiscrepancyActionController:
             )
             record_data["_added_to_db"] = True
             action_widget.mark_as_resolved()
-            QMessageBox.information(self._win, "Success", f"Successfully added {final_data['firstname']} to the database.")
+            QMessageBox.information(
+                self._win,
+                "Success",
+                f"Successfully added {final_data['firstname']} to the database.",
+            )
         else:
-            QMessageBox.warning(self._win, "Error", f"Failed to add to database:\n{msg}")
+            QMessageBox.warning(
+                self._win, "Error", f"Failed to add to database:\n{msg}"
+            )
 
     def on_bday_action(self, action_name: str, record: dict, action_widget: Any):
         from core.database import update_birthday_db
@@ -67,7 +82,9 @@ class DiscrepancyActionController:
         from PySide6.QtWidgets import QMessageBox, QInputDialog
         from ui.auth_guard import require_permission
 
-        if not require_permission(self._win, self._win.current_user, "edit_discrepancy"):
+        if not require_permission(
+            self._win, self._win.current_user, "edit_discrepancy"
+        ):
             return
 
         ex = record["excel"]
@@ -78,43 +95,64 @@ class DiscrepancyActionController:
             if success:
                 record["baseline_mismatch"] = False
                 action_widget.mark_as_resolved()
-                QMessageBox.information(self._win, "Success", f"Updated DB birthday to {ex['birthday']}." )
+                QMessageBox.information(
+                    self._win, "Success", f"Updated DB birthday to {ex['birthday']}."
+                )
             else:
                 QMessageBox.warning(self._win, "Error", "Failed to update DB birthday.")
 
         elif action_name == "use_db":
-            success = update_excel_birthday(ex["file_path"], ex["row_number"], db["birthday"])
+            success = update_excel_birthday(
+                ex["file_path"], ex["row_number"], db["birthday"]
+            )
             if success:
                 record["baseline_mismatch"] = False
                 action_widget.mark_as_resolved()
-                QMessageBox.information(self._win, "Success", f"Updated Excel file birthday to {db['birthday']}." )
+                QMessageBox.information(
+                    self._win,
+                    "Success",
+                    f"Updated Excel file birthday to {db['birthday']}.",
+                )
             else:
-                QMessageBox.warning(self._win, "Error", "Failed to update Excel file birthday.")
+                QMessageBox.warning(
+                    self._win, "Error", "Failed to update Excel file birthday."
+                )
 
         elif action_name == "manual":
             date_str, ok = QInputDialog.getText(
                 self._win,
                 "Manual Correction",
                 f"Enter correct birthday for {db['lastname']} (YYYY-MM-DD):",
-                text=ex['birthday'] or db['birthday'],
+                text=ex["birthday"] or db["birthday"],
             )
             if not ok or not date_str:
                 return
 
             import re
-            if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
-                QMessageBox.warning(self._win, "Error", "Invalid date format. Please use YYYY-MM-DD.")
+
+            if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_str):
+                QMessageBox.warning(
+                    self._win, "Error", "Invalid date format. Please use YYYY-MM-DD."
+                )
                 return
 
-            success_db = update_birthday_db(db['beneficiary_id'], date_str)
-            success_ex = update_excel_birthday(ex['file_path'], ex['row_number'], date_str)
+            success_db = update_birthday_db(db["beneficiary_id"], date_str)
+            success_ex = update_excel_birthday(
+                ex["file_path"], ex["row_number"], date_str
+            )
 
             if success_db and success_ex:
-                record['baseline_mismatch'] = False
+                record["baseline_mismatch"] = False
                 action_widget.mark_as_resolved()
-                QMessageBox.information(self._win, "Success", f"Updated both DB and Excel to {date_str}.")
+                QMessageBox.information(
+                    self._win, "Success", f"Updated both DB and Excel to {date_str}."
+                )
             else:
-                QMessageBox.warning(self._win, "Error", "Failed to fully update. Check console for details.")
+                QMessageBox.warning(
+                    self._win,
+                    "Error",
+                    "Failed to fully update. Check console for details.",
+                )
 
     def on_name_action(self, action_name: str, record: dict, action_widget: Any):
         from core.database import update_name_db, get_surname_dictionary
@@ -123,43 +161,51 @@ class DiscrepancyActionController:
         from PySide6.QtWidgets import QMessageBox, QInputDialog
         from ui.auth_guard import require_permission
 
-        if not require_permission(self._win, self._win.current_user, "edit_discrepancy"):
+        if not require_permission(
+            self._win, self._win.current_user, "edit_discrepancy"
+        ):
             return
 
         ex = record["excel"]
         db = record["db"]
 
         db_fullname = f"{db.get('lastname', '')}, {db.get('firstname', '')}"
-        if db.get('middlename'):
+        if db.get("middlename"):
             db_fullname += f" {db.get('middlename')}"
 
-        ex_fullname = ex.get('raw_name', '')
+        ex_fullname = ex.get("raw_name", "")
 
         if action_name == "use_excel":
             surname_dict = get_surname_dictionary()
             ln, fn, mn = split_beneficiary_name(ex_fullname, surname_dict=surname_dict)
-            success = update_name_db(db['beneficiary_id'], ln, fn, mn)
+            success = update_name_db(db["beneficiary_id"], ln, fn, mn)
             if success:
-                record['name_mismatch'] = False
+                record["name_mismatch"] = False
                 action_widget.mark_as_resolved()
-                QMessageBox.information(self._win, "Success", f"Updated DB name to {ex_fullname}.")
+                QMessageBox.information(
+                    self._win, "Success", f"Updated DB name to {ex_fullname}."
+                )
             else:
                 QMessageBox.warning(self._win, "Error", "Failed to update DB name.")
 
         elif action_name == "use_db":
-            success = update_excel_name(ex['file_path'], ex['row_number'], db_fullname)
+            success = update_excel_name(ex["file_path"], ex["row_number"], db_fullname)
             if success:
-                record['name_mismatch'] = False
+                record["name_mismatch"] = False
                 action_widget.mark_as_resolved()
-                QMessageBox.information(self._win, "Success", f"Updated Excel file name to {db_fullname}.")
+                QMessageBox.information(
+                    self._win, "Success", f"Updated Excel file name to {db_fullname}."
+                )
             else:
-                QMessageBox.warning(self._win, "Error", "Failed to update Excel file name.")
+                QMessageBox.warning(
+                    self._win, "Error", "Failed to update Excel file name."
+                )
 
         elif action_name == "manual":
             name_str, ok = QInputDialog.getText(
                 self._win,
                 "Manual Correction",
-                f"Enter correct name for {db_fullname} (Format: LASTNAME, FIRSTNAME MIDDLENAME):",
+                f"Enter correct name for {db_fullname} (Format: LASTNAME, FIRSTNAME MIDDLENAME):",  # noqa: E501
                 text=ex_fullname,
             )
             if not ok or not name_str:
@@ -168,18 +214,28 @@ class DiscrepancyActionController:
             surname_dict = get_surname_dictionary()
             ln, fn, mn = split_beneficiary_name(name_str, surname_dict=surname_dict)
             if not ln or not fn:
-                QMessageBox.warning(self._win, "Error", "Invalid name format. Please use 'LASTNAME, FIRSTNAME MIDDLENAME'.")
+                QMessageBox.warning(
+                    self._win,
+                    "Error",
+                    "Invalid name format. Please use 'LASTNAME, FIRSTNAME MIDDLENAME'.",
+                )
                 return
 
-            success_db = update_name_db(db['beneficiary_id'], ln, fn, mn)
-            success_ex = update_excel_name(ex['file_path'], ex['row_number'], name_str)
+            success_db = update_name_db(db["beneficiary_id"], ln, fn, mn)
+            success_ex = update_excel_name(ex["file_path"], ex["row_number"], name_str)
 
             if success_db and success_ex:
-                record['name_mismatch'] = False
+                record["name_mismatch"] = False
                 action_widget.mark_as_resolved()
-                QMessageBox.information(self._win, "Success", f"Updated both DB and Excel to {name_str}.")
+                QMessageBox.information(
+                    self._win, "Success", f"Updated both DB and Excel to {name_str}."
+                )
             else:
-                QMessageBox.warning(self._win, "Error", "Failed to fully update. Check console for details.")
+                QMessageBox.warning(
+                    self._win,
+                    "Error",
+                    "Failed to fully update. Check console for details.",
+                )
 
     def on_missing_excel_action(self, action: str, record: dict, widget: Any):
         if action != "delete_from_db":
@@ -193,7 +249,7 @@ class DiscrepancyActionController:
         reply = QMessageBox.question(
             self._win,
             "Confirm Deletion",
-            f"Are you sure you want to permanently delete {name} and all related records from the database?",
+            f"Are you sure you want to permanently delete {name} and all related records from the database?",  # noqa: E501
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -201,11 +257,13 @@ class DiscrepancyActionController:
         if reply != QMessageBox.Yes:
             return
 
-        if not require_permission(self._win, self._win.current_user, "delete_beneficiary"):
+        if not require_permission(
+            self._win, self._win.current_user, "delete_beneficiary"
+        ):
             return
 
         try:
-            bid = record.get('beneficiary_id')
+            bid = record.get("beneficiary_id")
             ok, err = delete_beneficiary_cascade(bid)
             if not ok:
                 QMessageBox.critical(
@@ -215,7 +273,7 @@ class DiscrepancyActionController:
                 )
                 return
 
-            record['_deleted_from_db'] = True
+            record["_deleted_from_db"] = True
             widget.mark_as_resolved()
             self._win._audit(
                 "delete_beneficiary",

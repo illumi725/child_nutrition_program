@@ -38,9 +38,7 @@ class FakeFetchCountsWorker:
         self.error = _FakeSignal()
 
     def start(self):
-        self.finished.emit(
-            [(rec, {"feeding_records": 0}) for rec in self.records]
-        )
+        self.finished.emit([(rec, {"feeding_records": 0}) for rec in self.records])
 
 
 @pytest.fixture
@@ -53,7 +51,9 @@ def db_dup_env(monkeypatch):
     fake_dialog_mod = types.ModuleType("ui.components.db_duplicate_dialog")
     fake_dialog_mod.DeleteWorker = FakeDeleteWorker
     fake_dialog_mod.FetchCountsWorker = FakeFetchCountsWorker
-    monkeypatch.setitem(sys.modules, "ui.components.db_duplicate_dialog", fake_dialog_mod)
+    monkeypatch.setitem(
+        sys.modules, "ui.components.db_duplicate_dialog", fake_dialog_mod
+    )
 
 
 class DummyButton:
@@ -156,6 +156,4 @@ def test_load_counts(db_dup_env):
     ctrl.load_counts()
 
     assert dlg._populate_called is True
-    assert dlg.records_with_counts == [
-        ({"beneficiary_id": 3}, {"feeding_records": 0})
-    ]
+    assert dlg.records_with_counts == [({"beneficiary_id": 3}, {"feeding_records": 0})]

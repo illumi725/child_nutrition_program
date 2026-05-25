@@ -97,11 +97,8 @@ def test_on_browse_folder(file_explorer_env):
 
 
 def test_on_rebuild_index_clears_cache(file_explorer_env):
-    import os
 
-    backend_root = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..")
-    )
+    backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     cache = os.path.join(backend_root, "interfile_index_cache.json")
     try:
         with open(cache, "w", encoding="utf-8") as f:

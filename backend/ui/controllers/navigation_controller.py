@@ -1,4 +1,5 @@
 """Controller for main window navigation and UI action wiring."""
+
 from __future__ import annotations
 
 
@@ -70,9 +71,13 @@ class NavigationController:
         dlg.exec()
 
         user_display = (
-            f"{self._win.current_user['firstname']} {self._win.current_user['lastname']} "
-            f"({self._win.current_user['role']})"
-        ) if self._win.current_user else "Unknown User"
+            (
+                f"{self._win.current_user['firstname']} {self._win.current_user['lastname']} "  # noqa: E501
+                f"({self._win.current_user['role']})"
+            )
+            if self._win.current_user
+            else "Unknown User"
+        )
         self._win._update_window_title(user_display)
         self._win.auto_sync_controller.start_auto_sync_timer()
 
@@ -84,6 +89,7 @@ class NavigationController:
             from core.version import APP_VERSION, APP_RELEASE_DATE
         except ImportError:
             from core.version import APP_VERSION
+
             APP_RELEASE_DATE = datetime.date.today().strftime("%B %d, %Y")
 
         current_year = datetime.date.today().year

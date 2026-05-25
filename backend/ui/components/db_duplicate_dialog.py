@@ -1,11 +1,19 @@
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QMessageBox, QFrame, QScrollArea, QWidget, QButtonGroup, QRadioButton,
-    QCheckBox
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QAbstractItemView,
+    QMessageBox,
+    QWidget,
+    QCheckBox,
 )
 from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtGui import QColor
 from ui.format_utils import format_display_date
 
 
@@ -20,9 +28,10 @@ class FetchCountsWorker(QThread):
     def run(self):
         try:
             from core.database import get_beneficiary_related_counts
+
             results = []
             for rec in self.records:
-                b_id = rec.get('beneficiary_id')
+                b_id = rec.get("beneficiary_id")
                 counts = get_beneficiary_related_counts(b_id)
                 results.append((rec, counts))
             self.finished.emit(results)
@@ -39,6 +48,7 @@ class DeleteWorker(QThread):
 
     def run(self):
         from core.database import delete_beneficiary_cascade
+
         errors = []
         for b_id in self.beneficiary_ids:
             ok, err = delete_beneficiary_cascade(b_id)
@@ -51,7 +61,7 @@ class DeleteWorker(QThread):
 
 
 class DBDuplicateDialog(QDialog):
-    """Shows all duplicate DB records for a given name, with related counts, and lets the user delete them."""
+    """Shows all duplicate DB records for a given name, with related counts, and lets the user delete them."""  # noqa: E501
 
     def __init__(self, duplicate_records, parent=None):
         super().__init__(parent)
@@ -73,13 +83,13 @@ class DBDuplicateDialog(QDialog):
             parent_geo = parent.geometry()
             self.move(
                 parent_geo.left() + (parent_geo.width() - self.width()) // 2,
-                parent_geo.top() + (parent_geo.height() - self.height()) // 2
+                parent_geo.top() + (parent_geo.height() - self.height()) // 2,
             )
         else:
             screen = self.screen().availableGeometry()
             self.move(
                 screen.x() + (screen.width() - self.width()) // 2,
-                screen.y() + (screen.height() - self.height()) // 2
+                screen.y() + (screen.height() - self.height()) // 2,
             )
 
     def _current_user(self):
@@ -88,6 +98,7 @@ class DBDuplicateDialog(QDialog):
 
     def _apply_delete_permission(self):
         from ui.auth_guard import user_has_permission
+
         if not user_has_permission(self._current_user(), "delete_beneficiary"):
             self.btn_delete.setVisible(False)
             self.btn_delete.setEnabled(False)
@@ -103,7 +114,7 @@ class DBDuplicateDialog(QDialog):
 
         sub = QLabel(
             "Review the records below. Each row shows how many related records exist.\n"
-            "Tick the row(s) you want to permanently DELETE from the Database, then click [Delete Selected]."
+            "Tick the row(s) you want to permanently DELETE from the Database, then click [Delete Selected]."  # noqa: E501
         )
         sub.setStyleSheet("color: #7f8c8d; font-size: 12px;")
         sub.setWordWrap(True)
@@ -117,11 +128,21 @@ class DBDuplicateDialog(QDialog):
         # Table
         self.table = QTableWidget()
         self.table.setColumnCount(11)
-        self.table.setHorizontalHeaderLabels([
-            "Select", "ID", "Last Name", "First Name", "Birthday",
-            "Gender", "Site",
-            "Feedings", "Baseline", "Ht/Wt", "Parents / Absences"
-        ])
+        self.table.setHorizontalHeaderLabels(
+            [
+                "Select",
+                "ID",
+                "Last Name",
+                "First Name",
+                "Birthday",
+                "Gender",
+                "Site",
+                "Feedings",
+                "Baseline",
+                "Ht/Wt",
+                "Parents / Absences",
+            ]
+        )
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table.setWordWrap(False)
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.Interactive)
@@ -149,7 +170,9 @@ class DBDuplicateDialog(QDialog):
 
         # Buttons
         btn_row = QHBoxLayout()
-        self.btn_delete = QPushButton("🗑  Delete Selected Record (with all related data)")
+        self.btn_delete = QPushButton(
+            "🗑  Delete Selected Record (with all related data)"
+        )
         self.btn_delete.setEnabled(False)
         self.btn_delete.setStyleSheet("""
             QPushButton {
@@ -182,11 +205,11 @@ class DBDuplicateDialog(QDialog):
         self.checkboxes = []
 
         for row_i, (rec, counts) in enumerate(records_with_counts):
-            feeding = counts.get('feeding_records', 0)
-            baseline = counts.get('baseline_info', 0)
-            hw = counts.get('height_weight_records', 0)
-            parents = counts.get('parent_links', 0)
-            absences = counts.get('absence_records', 0)
+            feeding = counts.get("feeding_records", 0)
+            baseline = counts.get("baseline_info", 0)
+            hw = counts.get("height_weight_records", 0)
+            parents = counts.get("parent_links", 0)
+            absences = counts.get("absence_records", 0)
 
             # Create centered checkbox widget for column 0
             chk = QCheckBox()
@@ -196,12 +219,12 @@ class DBDuplicateDialog(QDialog):
 
             vals = [
                 "",  # placeholder for select col
-                str(rec.get('beneficiary_id', '')),
-                rec.get('lastname', ''),
-                rec.get('firstname', ''),
-                format_display_date(rec.get('birthday', '')),
-                rec.get('gender', ''),
-                rec.get('site_name', '') or '—',
+                str(rec.get("beneficiary_id", "")),
+                rec.get("lastname", ""),
+                rec.get("firstname", ""),
+                format_display_date(rec.get("birthday", "")),
+                rec.get("gender", ""),
+                rec.get("site_name", "") or "—",
                 str(feeding),
                 str(baseline),
                 str(hw),
@@ -209,8 +232,9 @@ class DBDuplicateDialog(QDialog):
             ]
 
             # Determine if row should be highlighted in green
-            total = (feeding if isinstance(feeding, int) else 0) + \
-                    (baseline if isinstance(baseline, int) else 0)
+            total = (feeding if isinstance(feeding, int) else 0) + (
+                baseline if isinstance(baseline, int) else 0
+            )
             is_green = total > 0
 
             for col_i, val in enumerate(vals):
@@ -248,7 +272,9 @@ class DBDuplicateDialog(QDialog):
         return container
 
     def _update_delete_btn(self):
-        checked_indices = [i for i, chk in enumerate(self.checkboxes) if chk.isChecked()]
+        checked_indices = [
+            i for i, chk in enumerate(self.checkboxes) if chk.isChecked()
+        ]
         num_checked = len(checked_indices)
         total_rows = len(self.checkboxes)
 
@@ -261,25 +287,35 @@ class DBDuplicateDialog(QDialog):
         elif num_checked == total_rows:
             self.btn_delete.setEnabled(False)
             self.btn_delete.setText("🗑  Delete Selected Record (with all related data)")
-            self.lbl_status.setText("⚠ You cannot delete ALL occurrences. At least one record must be retained.")
-            self.lbl_status.setStyleSheet("color: #c0392b; font-size: 11px; font-weight: bold;")
+            self.lbl_status.setText(
+                "⚠ You cannot delete ALL occurrences. At least one record must be retained."  # noqa: E501
+            )
+            self.lbl_status.setStyleSheet(
+                "color: #c0392b; font-size: 11px; font-weight: bold;"
+            )
             self.selected_ids = []
         else:
             self.btn_delete.setEnabled(True)
-            self.selected_ids = [self.records_with_counts[i][0]['beneficiary_id'] for i in checked_indices]
-            
+            self.selected_ids = [
+                self.records_with_counts[i][0]["beneficiary_id"]
+                for i in checked_indices
+            ]
+
             if num_checked == 1:
                 rec, _ = self.records_with_counts[checked_indices[0]]
                 name = f"{rec.get('lastname')}, {rec.get('firstname')}"
-                self.btn_delete.setText(f"🗑  Delete: {name} (ID: {rec['beneficiary_id']})")
+                self.btn_delete.setText(
+                    f"🗑  Delete: {name} (ID: {rec['beneficiary_id']})"
+                )
             else:
                 self.btn_delete.setText(f"🗑  Delete {num_checked} Selected Records")
-                
+
             self.lbl_status.setText("Select duplicate records to delete.")
             self.lbl_status.setStyleSheet("color: #2980b9; font-size: 11px;")
 
     def on_delete(self):
         from ui.auth_guard import require_permission
+
         if not require_permission(self, self._current_user(), "delete_beneficiary"):
             return
         if not self.selected_ids:
@@ -287,30 +323,41 @@ class DBDuplicateDialog(QDialog):
 
         recs_to_delete = []
         for b_id in self.selected_ids:
-            rec = next((r for r, _ in self.records_with_counts if r['beneficiary_id'] == b_id), {})
-            counts = next((c for r, c in self.records_with_counts if r['beneficiary_id'] == b_id), {})
+            rec = next(
+                (r for r, _ in self.records_with_counts if r["beneficiary_id"] == b_id),
+                {},
+            )
+            counts = next(
+                (c for r, c in self.records_with_counts if r["beneficiary_id"] == b_id),
+                {},
+            )
             recs_to_delete.append((rec, counts))
 
         summary_lines = []
         total_counts = {}
         for rec, counts in recs_to_delete:
-            summary_lines.append(f"  • {rec.get('lastname')}, {rec.get('firstname')} (ID: {rec['beneficiary_id']})")
+            summary_lines.append(
+                f"  • {rec.get('lastname')}, {rec.get('firstname')} (ID: {rec['beneficiary_id']})"  # noqa: E501
+            )
             for k, v in counts.items():
                 if isinstance(v, int):
                     total_counts[k] = total_counts.get(k, 0) + v
 
-        detail = "\n".join([f"  • {k}: {v} records" for k, v in total_counts.items() if v > 0])
+        detail = "\n".join(
+            [f"  • {k}: {v} records" for k, v in total_counts.items() if v > 0]
+        )
         if not detail:
             detail = "  • No related counts found"
 
         confirm = QMessageBox.warning(
             self,
             "Confirm Hard Delete",
-            f"You are about to PERMANENTLY DELETE {len(recs_to_delete)} record(s) from Database:\n\n" +
-            "\n".join(summary_lines) + f"\n\nTotal related records that will also be deleted:\n{detail}\n\n"
+            f"You are about to PERMANENTLY DELETE {len(recs_to_delete)} record(s) from Database:\n\n"  # noqa: E501
+            + "\n".join(summary_lines)
+            + f"\n\nTotal related records that will also be deleted:\n{detail}\n\n"
             f"⚠  This action CANNOT be undone. Are you sure?",
             QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.No,
         )
 
         if confirm != QMessageBox.Yes:
@@ -326,20 +373,27 @@ class DBDuplicateDialog(QDialog):
 
     def _on_delete_done(self, success, err):
         if success:
-            self.lbl_status.setText(f"✅  Selected record(s) and all related data deleted successfully.")
+            self.lbl_status.setText(
+                "✅  Selected record(s) and all related data deleted successfully."
+            )
             # Remove from internal list and refresh table
             self.records_with_counts = [
-                (r, c) for r, c in self.records_with_counts
-                if r['beneficiary_id'] not in self.selected_ids
+                (r, c)
+                for r, c in self.records_with_counts
+                if r["beneficiary_id"] not in self.selected_ids
             ]
             self.selected_ids = []
             self._populate_table(self.records_with_counts)
             self._update_delete_btn()
 
             if len(self.records_with_counts) <= 1:
-                QMessageBox.information(self, "Done", "Duplicate resolved! Only one record remains.")
+                QMessageBox.information(
+                    self, "Done", "Duplicate resolved! Only one record remains."
+                )
                 self.accept()
         else:
             self.lbl_status.setText(f"❌  Error: {err}")
             self._update_delete_btn()
-            QMessageBox.critical(self, "Delete Failed", f"Could not delete record(s):\n{err}")
+            QMessageBox.critical(
+                self, "Delete Failed", f"Could not delete record(s):\n{err}"
+            )

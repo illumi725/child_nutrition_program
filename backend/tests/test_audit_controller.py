@@ -16,8 +16,10 @@ def audit_env(monkeypatch):
 
     audit_mod = types.ModuleType("core.audit")
     audit_mod.audit_user_id = lambda user: user.get("id", 0)
-    audit_mod.log_action = lambda user_id, action, entity_type, entity_id=None, details=None: log_action_calls.append(
-        (user_id, action, entity_type, entity_id, details)
+    audit_mod.log_action = (
+        lambda user_id, action, entity_type, entity_id=None, details=None: (
+            log_action_calls.append((user_id, action, entity_type, entity_id, details))
+        )
     )
     monkeypatch.setitem(sys.modules, "core.audit", audit_mod)
     return log_action_calls

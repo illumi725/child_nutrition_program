@@ -29,6 +29,7 @@ def log_action(
     """
     try:
         from core.database import get_db_connection
+
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:

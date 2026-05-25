@@ -1,4 +1,8 @@
-from core.password_utils import hash_access_code, is_hashed_access_code, verify_access_code
+from core.password_utils import (
+    hash_access_code,
+    is_hashed_access_code,
+    verify_access_code,
+)
 
 
 def test_hash_and_verify():

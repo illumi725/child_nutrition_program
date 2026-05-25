@@ -23,7 +23,9 @@ def test_split_beneficiary_name_suffix():
 def test_split_compound_firstname_with_surname_dict():
     surname_dict = {"SANTOS"}
     ln, fn, mn = split_beneficiary_name("MARIA CLARA, ANA LUZ")
-    ln2, fn2, mn2 = split_beneficiary_name("MARIA CLARA, ANA LUZ", surname_dict=surname_dict)
+    ln2, fn2, mn2 = split_beneficiary_name(
+        "MARIA CLARA, ANA LUZ", surname_dict=surname_dict
+    )
     assert ln == ln2 == "MARIA CLARA"
     assert mn2 == ""
 

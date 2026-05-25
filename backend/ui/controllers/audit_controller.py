@@ -1,4 +1,5 @@
 """Controller for user action audit logging."""
+
 from __future__ import annotations
 
 

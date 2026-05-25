@@ -1,9 +1,16 @@
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QGroupBox, QRadioButton, QProgressBar, QSpinBox, QCheckBox,
-    QMessageBox
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QGroupBox,
+    QRadioButton,
+    QProgressBar,
+    QSpinBox,
+    QCheckBox,
+    QMessageBox,
 )
-from PySide6.QtCore import Qt, QTimer
 
 
 class SettingsDialog(QDialog):
@@ -24,8 +31,12 @@ class SettingsDialog(QDialog):
         mode_box = QGroupBox("Database Mode")
         mode_layout = QVBoxLayout(mode_box)
 
-        self.rb_cloud = QRadioButton("☁  Cloud Mode  —  Always connects to the production database in real time")
-        self.rb_local = QRadioButton("💾  Local Mode  —  Uses a local SQLite snapshot (works offline)")
+        self.rb_cloud = QRadioButton(
+            "☁  Cloud Mode  —  Always connects to the production database in real time"
+        )
+        self.rb_local = QRadioButton(
+            "💾  Local Mode  —  Uses a local SQLite snapshot (works offline)"
+        )
         mode_layout.addWidget(self.rb_cloud)
         mode_layout.addWidget(self.rb_local)
 
@@ -57,7 +68,9 @@ class SettingsDialog(QDialog):
         self.btn_sync_now.setToolTip("Sync only changed rows since last sync")
         self.btn_sync_now.clicked.connect(self._run_sync)
         self.btn_full_replicate = QPushButton("⬇  Full Replication")
-        self.btn_full_replicate.setToolTip("Wipe and re-download ALL data from cloud (first-run setup)")
+        self.btn_full_replicate.setToolTip(
+            "Wipe and re-download ALL data from cloud (first-run setup)"
+        )
         self.btn_full_replicate.clicked.connect(self._run_full_replicate)
         btn_row.addWidget(self.btn_sync_now)
         btn_row.addWidget(self.btn_full_replicate)
@@ -86,26 +99,35 @@ class SettingsDialog(QDialog):
         layout.addLayout(btn_row2)
 
     def _load_settings(self):
-        from core.app_settings import (get_mode, get_auto_sync_enabled,
-                                       get_auto_sync_interval, get_last_synced)
+        from core.app_settings import (
+            get_mode,
+            get_auto_sync_enabled,
+            get_auto_sync_interval,
+            get_last_synced,
+        )
+
         mode = get_mode()
-        self.rb_cloud.setChecked(mode == 'cloud')
-        self.rb_local.setChecked(mode == 'local')
+        self.rb_cloud.setChecked(mode == "cloud")
+        self.rb_local.setChecked(mode == "local")
         self.chk_auto_sync.setChecked(get_auto_sync_enabled())
         self.spin_interval.setValue(get_auto_sync_interval())
         self.lbl_last_sync.setText(f"Last Sync: {get_last_synced()}")
 
     def _save_and_close(self):
-        from core.app_settings import (set_mode, set_auto_sync_enabled,
-                                       set_auto_sync_interval, get_mode)
+        from core.app_settings import (
+            set_mode,
+            set_auto_sync_enabled,
+            set_auto_sync_interval,
+            get_mode,
+        )
         from ui.auth_guard import require_permission
 
         old_mode = get_mode()
-        new_mode = 'cloud' if self.rb_cloud.isChecked() else 'local'
+        new_mode = "cloud" if self.rb_cloud.isChecked() else "local"
         if old_mode != new_mode:
             parent_user = getattr(self.parent(), "current_user", None)
             if not require_permission(self, parent_user, "settings_mode_switch"):
-                if old_mode == 'cloud':
+                if old_mode == "cloud":
                     self.rb_cloud.setChecked(True)
                 else:
                     self.rb_local.setChecked(True)
@@ -122,46 +144,51 @@ class SettingsDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Restarting Application",
-                f"Mode switched to {'☁ Cloud' if new_mode == 'cloud' else '💾 Local'}.\n"
-                "The application will now restart to apply this change."
+                f"Mode switched to {'☁ Cloud' if new_mode == 'cloud' else '💾 Local'}.\n"  # noqa: E501
+                "The application will now restart to apply this change.",
             )
-            
+
             # Close this dialog
             self.accept()
-            
-            # Formulate the restart command to support raw python and compiled PyInstaller executables
+
+            # Formulate the restart command to support raw python and compiled PyInstaller executables  # noqa: E501
             args = sys.argv[:]
-            if getattr(sys, 'frozen', False):
+            if getattr(sys, "frozen", False):
                 cmd = [sys.executable] + args[1:]
             else:
                 cmd = [sys.executable] + args
-                
+
             try:
                 subprocess.Popen(cmd)
-            except Exception as e:
+            except Exception:
                 pass
-                
+
             QApplication.quit()
         else:
             self.accept()
 
     def _run_sync(self):
-        self._start_sync_worker(mode='sync')
+        self._start_sync_worker(mode="sync")
 
     def _run_full_replicate(self):
         from ui.auth_guard import require_permission
+
         parent_user = getattr(self.parent(), "current_user", None)
         if not require_permission(self, parent_user, "full_replication"):
             return
-        confirm = QMessageBox.question(self, "Full Replication",
+        confirm = QMessageBox.question(
+            self,
+            "Full Replication",
             "This will wipe the local database and re-download ALL data from cloud.\n"
             "This may take several minutes. Continue?",
-            QMessageBox.Yes | QMessageBox.No)
+            QMessageBox.Yes | QMessageBox.No,
+        )
         if confirm == QMessageBox.Yes:
-            self._start_sync_worker(mode='full')
+            self._start_sync_worker(mode="full")
 
     def _start_sync_worker(self, mode: str):
         from core.sync_engine import SyncWorker
+
         if self._sync_worker and self._sync_worker.isRunning():
             return
 
@@ -172,7 +199,7 @@ class SettingsDialog(QDialog):
         self.btn_full_replicate.setEnabled(False)
         self.btn_save.setEnabled(False)
 
-        worker_mode = SyncWorker.MODE_FULL if mode == 'full' else SyncWorker.MODE_SYNC
+        worker_mode = SyncWorker.MODE_FULL if mode == "full" else SyncWorker.MODE_SYNC
         self._sync_worker = SyncWorker(mode=worker_mode, parent=self)
         self._sync_worker.progress.connect(self._on_progress)
         self._sync_worker.finished.connect(self._on_finished)
@@ -185,6 +212,7 @@ class SettingsDialog(QDialog):
 
     def _on_finished(self, success: bool, summary: str):
         from core.app_settings import get_last_synced
+
         self.progress_bar.setValue(100)
         self.lbl_last_sync.setText(f"Last Sync: {get_last_synced()}")
         self.lbl_progress_msg.setText(summary)

@@ -2,18 +2,20 @@ from PySide6.QtGui import QPalette, QColor, QFont, QIcon, QPixmap, QPainter
 from PySide6.QtWidgets import QApplication, QProxyStyle, QStyle
 from PySide6.QtCore import Qt
 
+
 def create_emoji_icon(emoji_char, size=48):
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.transparent)
     painter = QPainter(pixmap)
     font = painter.font()
-    # Emphasize Apple Color Emoji if available, or just generic sans-serif which resolves emojis
-    font.setFamily("Apple Color Emoji") 
+    # Emphasize Apple Color Emoji if available, or just generic sans-serif which resolves emojis  # noqa: E501
+    font.setFamily("Apple Color Emoji")
     font.setPixelSize(int(size * 0.75))
     painter.setFont(font)
     painter.drawText(pixmap.rect(), Qt.AlignCenter, emoji_char)
     painter.end()
     return QIcon(pixmap)
+
 
 class EmojiProxyStyle(QProxyStyle):
     def standardIcon(self, standardIcon, option=None, widget=None):
@@ -49,21 +51,22 @@ class EmojiProxyStyle(QProxyStyle):
             return create_emoji_icon("❓", 20)
         return super().standardIcon(standardIcon, option, widget)
 
+
 def apply_theme(app: QApplication, mode: str):
     """
     Applies a macOS-inspired global QPalette and stylesheet for the application.
     mode should be 'light' or 'dark'.
     """
     app.setStyle(EmojiProxyStyle(app.style().name()))
-    
+
     palette = QPalette()
-    
+
     # Base Fonts (macOS-like)
     font = QFont("San Francisco", 10)
     font.setStyleHint(QFont.SansSerif)
     app.setFont(font)
 
-    is_dark = (mode == "dark")
+    is_dark = mode == "dark"
 
     # Colors
     if is_dark:
@@ -73,7 +76,7 @@ def apply_theme(app: QApplication, mode: str):
         text_disabled = QColor(120, 120, 120)
         base_color = QColor(45, 45, 45)
         alt_base_color = QColor(55, 55, 55)
-        primary_blue = QColor(10, 132, 255) # macOS dark primary
+        primary_blue = QColor(10, 132, 255)  # macOS dark primary
         highlight_color = primary_blue
         highlight_text = QColor(255, 255, 255)
     else:
@@ -101,16 +104,16 @@ def apply_theme(app: QApplication, mode: str):
     palette.setColor(QPalette.Link, primary_blue)
     palette.setColor(QPalette.Highlight, highlight_color)
     palette.setColor(QPalette.HighlightedText, highlight_text)
-    
+
     # Disabled text
     palette.setColor(QPalette.Disabled, QPalette.Text, text_disabled)
     palette.setColor(QPalette.Disabled, QPalette.WindowText, text_disabled)
     palette.setColor(QPalette.Disabled, QPalette.ButtonText, text_disabled)
 
     app.setPalette(palette)
-    
-    # Inform Qt of the current color scheme so native icons (QMessageBox, folders) match the theme correctly
-    if hasattr(app.styleHints(), 'setColorScheme'):
+
+    # Inform Qt of the current color scheme so native icons (QMessageBox, folders) match the theme correctly  # noqa: E501
+    if hasattr(app.styleHints(), "setColorScheme"):
         app.styleHints().setColorScheme(
             Qt.ColorScheme.Dark if is_dark else Qt.ColorScheme.Light
         )
@@ -127,7 +130,7 @@ def apply_theme(app: QApplication, mode: str):
 
     chk_border = "#777777" if is_dark else "#a0a0a0"
     chk_bg = "#1a1a1a" if is_dark else "#ffffff"
-    
+
     global_qss = f"""
     QWidget {{
         font-family: "San Francisco", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -243,6 +246,6 @@ def apply_theme(app: QApplication, mode: str):
     QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
         height: 0px;
     }}
-    """
-    
+    """  # noqa: E501
+
     app.setStyleSheet(global_qss)

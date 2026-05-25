@@ -90,7 +90,9 @@ def fetch_expected_sha256(download_url: str, assets: list) -> str | None:
 
 
 class UpdateCheckThread(QThread):
-    update_available = Signal(str, str, str, str, str)  # tag, body, html_url, download_url, expected_sha256
+    update_available = Signal(
+        str, str, str, str, str
+    )  # tag, body, html_url, download_url, expected_sha256
     up_to_date = Signal()
     error_occurred = Signal(str)
 
@@ -169,7 +171,9 @@ class DownloadUpdateThread(QThread):
             self.progress.emit(0, "Connecting to update server...")
             response = requests.get(self.download_url, stream=True, timeout=10)
             if response.status_code != 200:
-                self.error.emit(f"Failed to download update: HTTP {response.status_code}")
+                self.error.emit(
+                    f"Failed to download update: HTTP {response.status_code}"
+                )
                 return
 
             total_size = int(response.headers.get("content-length", 0))
@@ -191,10 +195,12 @@ class DownloadUpdateThread(QThread):
                             pct = int((downloaded / total_size) * 100)
                             self.progress.emit(
                                 pct,
-                                f"Downloading update... {pct}% ({downloaded // 1024} KB / {total_size // 1024} KB)",
+                                f"Downloading update... {pct}% ({downloaded // 1024} KB / {total_size // 1024} KB)",  # noqa: E501
                             )
                         else:
-                            self.progress.emit(50, f"Downloading update... ({downloaded // 1024} KB)")
+                            self.progress.emit(
+                                50, f"Downloading update... ({downloaded // 1024} KB)"
+                            )
 
             if self._is_cancelled:
                 self.error.emit("Download cancelled.")
@@ -220,6 +226,7 @@ class DownloadUpdateThread(QThread):
 
             if os.path.exists(extracted_dir):
                 import shutil
+
                 try:
                     shutil.rmtree(extracted_dir)
                 except OSError:

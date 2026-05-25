@@ -60,7 +60,7 @@ class ScanController:
             QMessageBox.information(
                 self._win,
                 "No Cache",
-                "No cached index found. The index will be built fresh on the next scan.",
+                "No cached index found. The index will be built fresh on the next scan.",  # noqa: E501
             )
 
     def start_scan(self):
@@ -130,10 +130,14 @@ class ScanController:
             win.name_discrepancies, win.name_match_columns, action_label="NameActions"
         )
 
-        win.grid_exact.set_data(win.exact_matches, win.match_columns, action_label="Sync")
+        win.grid_exact.set_data(
+            win.exact_matches, win.match_columns, action_label="Sync"
+        )
         win.tabs.setTabText(0, f"Exact Matches ({len(win.exact_matches)})")
 
-        win.grid_fuzzy.set_data(win.fuzzy_matches, win.match_columns, action_label="Sync")
+        win.grid_fuzzy.set_data(
+            win.fuzzy_matches, win.match_columns, action_label="Sync"
+        )
         win.tabs.setTabText(1, f"High Confidence ({len(win.fuzzy_matches)})")
 
         win.grid_potential.set_data(
@@ -142,7 +146,9 @@ class ScanController:
         win.tabs.setTabText(2, f"Review Required ({len(win.potential_matches)})")
 
         win.tabs.setTabText(3, f"Name Discrepancies ({len(win.name_discrepancies)})")
-        win.tabs.setTabText(4, f"Birthday Discrepancies ({len(win.bday_discrepancies)})")
+        win.tabs.setTabText(
+            4, f"Birthday Discrepancies ({len(win.bday_discrepancies)})"
+        )
 
         missing_db_cols = [
             {"label": "Excel Name", "key": "raw_name"},
@@ -165,7 +171,9 @@ class ScanController:
             {
                 "label": "DB Name",
                 "key": "fullname",
-                "getter": lambda r: f"{r.get('lastname', '')}, {r.get('firstname', '')}",
+                "getter": lambda r: (
+                    f"{r.get('lastname', '')}, {r.get('firstname', '')}"
+                ),
             },
             {
                 "label": "Birthday",

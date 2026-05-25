@@ -26,7 +26,9 @@ class ResolutionController:
         sites = get_sites()
         if not sites:
             QMessageBox.warning(
-                self._win, "Error", "No feeding sites found in the database. Cannot add."
+                self._win,
+                "Error",
+                "No feeding sites found in the database. Cannot add.",
             )
             return
 
@@ -70,7 +72,9 @@ class ResolutionController:
                 f"Successfully added {final_data['firstname']} to the database.",
             )
         else:
-            QMessageBox.warning(self._win, "Error", f"Failed to add to database:\n{msg}")
+            QMessageBox.warning(
+                self._win, "Error", f"Failed to add to database:\n{msg}"
+            )
 
     def on_missing_excel_action(self, action, record, widget: Any):
         if action != "delete_from_db":
@@ -82,7 +86,7 @@ class ResolutionController:
         reply = QMessageBox.question(
             self._win,
             "Confirm Deletion",
-            f"Are you sure you want to permanently delete {name} and all related records from the database?",
+            f"Are you sure you want to permanently delete {name} and all related records from the database?",  # noqa: E501
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -90,7 +94,9 @@ class ResolutionController:
         if reply != QMessageBox.Yes:
             return
 
-        if not require_permission(self._win, self._win.current_user, "delete_beneficiary"):
+        if not require_permission(
+            self._win, self._win.current_user, "delete_beneficiary"
+        ):
             return
 
         try:
@@ -107,6 +113,10 @@ class ResolutionController:
             record["_deleted_from_db"] = True
             if hasattr(widget, "mark_as_resolved"):
                 widget.mark_as_resolved()
-            QMessageBox.information(self._win, "Deleted", f"Successfully deleted {name}.")
+            QMessageBox.information(
+                self._win, "Deleted", f"Successfully deleted {name}."
+            )
         except Exception as e:
-            QMessageBox.critical(self._win, "Database Error", f"Failed to delete record:\n{e}")
+            QMessageBox.critical(
+                self._win, "Database Error", f"Failed to delete record:\n{e}"
+            )

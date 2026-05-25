@@ -13,10 +13,12 @@ from ui.controllers.navigation_controller import NavigationController
 @pytest.fixture
 def nav_env(monkeypatch):
     auth_mod = types.ModuleType("ui.auth_guard")
-    auth_mod.user_has_permission = (
-        lambda user, p: p != "bulk_transfer" or user.get("can_transfer", False)
+    auth_mod.user_has_permission = lambda user, p: (
+        p != "bulk_transfer" or user.get("can_transfer", False)
     )
-    auth_mod.require_permission = lambda parent, user, p: user.get("can_transfer", False)
+    auth_mod.require_permission = lambda parent, user, p: user.get(
+        "can_transfer", False
+    )
     monkeypatch.setitem(sys.modules, "ui.auth_guard", auth_mod)
 
     current_theme = {"value": "light"}

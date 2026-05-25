@@ -1,10 +1,17 @@
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QTableWidget, QTableWidgetItem, QHeaderView,
-    QFrame, QAbstractItemView
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QFrame,
+    QAbstractItemView,
 )
 from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtGui import QColor
 
 
 class SearchWorker(QThread):
@@ -18,6 +25,7 @@ class SearchWorker(QThread):
     def run(self):
         try:
             from core.database import get_db_connection
+
             conn = get_db_connection()
             with conn.cursor() as cursor:
                 like = f"%{self.query}%"
@@ -88,7 +96,9 @@ class SearchBeneficiaryWindow(QDialog):
         # Search Bar
         search_layout = QHBoxLayout()
         self.txt_search = QLineEdit()
-        self.txt_search.setPlaceholderText("Type a last name, first name, birthday, or beneficiary ID...")
+        self.txt_search.setPlaceholderText(
+            "Type a last name, first name, birthday, or beneficiary ID..."
+        )
         self.txt_search.returnPressed.connect(self.do_search)
 
         self.btn_search = QPushButton("Search")
@@ -114,11 +124,20 @@ class SearchBeneficiaryWindow(QDialog):
         # Results Table
         self.table = QTableWidget()
         self.table.setColumnCount(10)
-        self.table.setHorizontalHeaderLabels([
-            "ID", "Last Name", "First Name", "Middle Name",
-            "Birthday", "Gender", "Site", "Barangay",
-            "Registered On", "Added By"
-        ])
+        self.table.setHorizontalHeaderLabels(
+            [
+                "ID",
+                "Last Name",
+                "First Name",
+                "Middle Name",
+                "Birthday",
+                "Gender",
+                "Site",
+                "Barangay",
+                "Registered On",
+                "Added By",
+            ]
+        )
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table.setWordWrap(False)
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.Interactive)
@@ -159,21 +178,23 @@ class SearchBeneficiaryWindow(QDialog):
             self.lbl_status.setText("❌  No beneficiaries found matching your search.")
             return
 
-        self.lbl_status.setText(f"✅  Found {len(records)} result(s). {'(Showing top 200)' if len(records) == 200 else ''}")
+        self.lbl_status.setText(
+            f"✅  Found {len(records)} result(s). {'(Showing top 200)' if len(records) == 200 else ''}"  # noqa: E501
+        )
         self.table.setRowCount(len(records))
 
         for row_idx, rec in enumerate(records):
             values = [
-                rec.get('beneficiary_id', ''),
-                rec.get('lastname', ''),
-                rec.get('firstname', ''),
-                rec.get('middlename', '') or '—',
-                str(rec.get('birthday', '')),
-                rec.get('gender', ''),
-                rec.get('site_name', '') or '—',
-                rec.get('barangay_name', '') or '—',
-                str(rec.get('registration_date', '')),
-                rec.get('created_by_name', '') or '—',
+                rec.get("beneficiary_id", ""),
+                rec.get("lastname", ""),
+                rec.get("firstname", ""),
+                rec.get("middlename", "") or "—",
+                str(rec.get("birthday", "")),
+                rec.get("gender", ""),
+                rec.get("site_name", "") or "—",
+                rec.get("barangay_name", "") or "—",
+                str(rec.get("registration_date", "")),
+                rec.get("created_by_name", "") or "—",
             ]
             for col_idx, val in enumerate(values):
                 item = QTableWidgetItem(str(val))
@@ -189,5 +210,3 @@ class SearchBeneficiaryWindow(QDialog):
         self.btn_search.setText("Search")
         self.lbl_status.setText(f"❌  Error: {err}")
         self.lbl_status.setStyleSheet("color: red; font-size: 11px;")
-
-

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from core.app_settings import get_local_db_path
+from core.app_settings import get_local_db_path  # noqa: E402
 
 db_path = get_local_db_path()
 conn = sqlite3.connect(db_path)

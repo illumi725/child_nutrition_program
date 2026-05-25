@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QTreeView, QFileSystemModel
-from PySide6.QtCore import QDir, Signal, Qt, QModelIndex
+from PySide6.QtCore import Signal, Qt, QModelIndex
 import os
+
 
 class CheckableFileSystemModel(QFileSystemModel):
     checked_files_changed = Signal(list)
@@ -18,11 +19,12 @@ class CheckableFileSystemModel(QFileSystemModel):
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
         if role == Qt.DecorationRole and index.column() == 0:
             from ui.theme import create_emoji_icon
+
             if self.isDir(index):
                 return create_emoji_icon("📁", 24)
             else:
                 return create_emoji_icon("📄", 24)
-        
+
         if role == Qt.CheckStateRole and index.column() == 0:
             path = self.filePath(index)
             if path in self.checked_paths:
@@ -33,15 +35,15 @@ class CheckableFileSystemModel(QFileSystemModel):
     def setData(self, index: QModelIndex, value: int, role: int = Qt.EditRole) -> bool:
         if role == Qt.CheckStateRole and index.column() == 0:
             path = self.filePath(index)
-            is_checked = (value == Qt.Checked.value)
-            
+            is_checked = value == Qt.Checked.value
+
             self._set_checked_recursive(path, is_checked)
-            
+
             # Force UI to redraw checkboxes
             self.layoutChanged.emit()
             self.checked_files_changed.emit(self.get_all_checked_xlsx())
             return True
-            
+
         return super().setData(index, value, role)
 
     def _set_checked_recursive(self, path, is_checked):
@@ -55,20 +57,22 @@ class CheckableFileSystemModel(QFileSystemModel):
                 if parent in self.checked_paths:
                     self.checked_paths.discard(parent)
                 parent = os.path.dirname(parent)
-            
+
         if os.path.isdir(path):
             try:
                 for item in os.listdir(path):
                     child_path = os.path.join(path, item)
-                    if item.startswith('.') or item.startswith('~'):
+                    if item.startswith(".") or item.startswith("~"):
                         continue
-                    if os.path.isdir(child_path) or child_path.endswith('.xlsx'):
+                    if os.path.isdir(child_path) or child_path.endswith(".xlsx"):
                         self._set_checked_recursive(child_path, is_checked)
             except PermissionError:
                 pass
 
     def get_all_checked_xlsx(self):
-        return [p for p in self.checked_paths if p.endswith('.xlsx') and os.path.isfile(p)]
+        return [
+            p for p in self.checked_paths if p.endswith(".xlsx") and os.path.isfile(p)
+        ]
 
 
 class FileExplorer(QTreeView):
@@ -81,10 +85,10 @@ class FileExplorer(QTreeView):
         # Filter to only show directories and xlsx files
         self.model.setNameFilters(["*.xlsx"])
         self.model.setNameFilterDisables(False)
-        
+
         self.setModel(self.model)
         self.setRootIndex(self.model.index(root_path))
-        
+
         # We don't need row selection anymore since we use checkboxes
         self.setSelectionMode(QTreeView.NoSelection)
         self.setAnimated(True)

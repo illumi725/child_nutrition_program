@@ -1,10 +1,9 @@
-"""Controller for update checks (background and manual) extracted from UpdateController."""
+"""Controller for update checks (background and manual) extracted from UpdateController."""  # noqa: E501
+
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QProgressDialog, QMessageBox
-
-from typing import Any
 
 
 class UpdateCheckController:
@@ -59,7 +58,6 @@ class UpdateCheckController:
     def check_for_updates_manual(self) -> None:
         from core.updater import UpdateCheckThread
         from core.version import APP_VERSION
-        from ui.controllers.update_download_controller import UpdateProgressDialog
 
         self._manual_progress = QProgressDialog(
             "Checking for updates...\nConnecting to GitHub server...",

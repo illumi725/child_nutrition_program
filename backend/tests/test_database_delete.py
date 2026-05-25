@@ -27,7 +27,14 @@ def test_delete_beneficiary_cascade_success(mock_connection):
 
 def test_delete_beneficiary_cascade_failure(mock_connection):
     conn, cursor = mock_connection
-    cursor.execute.side_effect = [None, None, None, None, None, RuntimeError("FK violation")]
+    cursor.execute.side_effect = [
+        None,
+        None,
+        None,
+        None,
+        None,
+        RuntimeError("FK violation"),
+    ]
     with patch.object(db, "get_db_connection", return_value=conn):
         ok, err = db.delete_beneficiary_cascade("bad-id")
     assert ok is False
@@ -38,6 +45,8 @@ def test_delete_beneficiary_cascade_failure(mock_connection):
 def test_generate_beneficiary_id_unique_on_second_try(mock_connection):
     conn, cursor = mock_connection
     cursor.fetchone.side_effect = [{"1": 1}, None]
-    with patch.object(db, "_random_beneficiary_id", side_effect=["takenid01", "uniqueid02"]):
+    with patch.object(
+        db, "_random_beneficiary_id", side_effect=["takenid01", "uniqueid02"]
+    ):
         bid = db.generate_beneficiary_id(cursor)
     assert bid == "uniqueid02"

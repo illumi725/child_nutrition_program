@@ -10,6 +10,7 @@ Ensure db.dat exists in backend/ or core/_config.py is configured, then:
   python scripts/migrate_access_codes.py --dry-run
   python scripts/migrate_access_codes.py
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,8 +38,12 @@ from core.database import _get_cloud_connection
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Hash plaintext access codes in users table.")
-    parser.add_argument("--dry-run", action="store_true", help="Report only; do not UPDATE.")
+    parser = argparse.ArgumentParser(
+        description="Hash plaintext access codes in users table."
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Report only; do not UPDATE."
+    )
     args = parser.parse_args()
 
     conn = _get_cloud_connection()

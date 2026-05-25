@@ -1,21 +1,32 @@
 import os
 import sys
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QMessageBox, QCheckBox, QWidget
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QAbstractItemView,
+    QMessageBox,
+    QCheckBox,
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
 
 from ui.format_utils import format_display_date
 
 
 def _interfile_cache_path():
-    if getattr(sys, 'frozen', False):
-        return os.path.join(os.path.dirname(sys.executable), "interfile_index_cache.json")
+    if getattr(sys, "frozen", False):
+        return os.path.join(
+            os.path.dirname(sys.executable), "interfile_index_cache.json"
+        )
     return os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", "..", "interfile_index_cache.json")
+        os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "interfile_index_cache.json"
+        )
     )
 
 
@@ -31,10 +42,10 @@ class ExcelDuplicateDialog(QDialog):
         dup_entry: the dict from excel_duplicates list:
             { 'name', 'birthday', 'type', 'files', 'rows': [excel_record, ...] }
         Each excel_record must have: raw_name, birthday, weight, height, file_path, row_number
-        """
+        """  # noqa: E501
         super().__init__(parent)
         self.dup_entry = dup_entry
-        self.rows = dup_entry.get('rows', [])
+        self.rows = dup_entry.get("rows", [])
 
         self.setWindowTitle(f"Manage Excel Duplicate — {dup_entry.get('name', '')}")
         self.setMinimumSize(720, 420)
@@ -49,13 +60,13 @@ class ExcelDuplicateDialog(QDialog):
             parent_geo = parent.geometry()
             self.move(
                 parent_geo.left() + (parent_geo.width() - self.width()) // 2,
-                parent_geo.top() + (parent_geo.height() - self.height()) // 2
+                parent_geo.top() + (parent_geo.height() - self.height()) // 2,
             )
         else:
             screen = self.screen().availableGeometry()
             self.move(
                 screen.x() + (screen.width() - self.width()) // 2,
-                screen.y() + (screen.height() - self.height()) // 2
+                screen.y() + (screen.height() - self.height()) // 2,
             )
 
     def _current_user(self):
@@ -64,6 +75,7 @@ class ExcelDuplicateDialog(QDialog):
 
     def _apply_delete_permission(self):
         from ui.auth_guard import user_has_permission
+
         if not user_has_permission(self._current_user(), "delete_excel_row"):
             self.btn_delete.setVisible(False)
             self.btn_delete.setEnabled(False)
@@ -77,8 +89,8 @@ class ExcelDuplicateDialog(QDialog):
         layout.addWidget(lbl)
 
         sub = QLabel(
-            f"Type: {self.dup_entry.get('type', '')}  |  Found in: {self.dup_entry.get('files', '')}\n"
-            "Tick the row(s) you want to permanently DELETE from the Excel file, then click [Delete Selected Rows]."
+            f"Type: {self.dup_entry.get('type', '')}  |  Found in: {self.dup_entry.get('files', '')}\n"  # noqa: E501
+            "Tick the row(s) you want to permanently DELETE from the Excel file, then click [Delete Selected Rows]."  # noqa: E501
         )
         sub.setStyleSheet("color: #7f8c8d; font-size: 12px;")
         sub.setWordWrap(True)
@@ -92,10 +104,10 @@ class ExcelDuplicateDialog(QDialog):
         # Table
         self.table = QTableWidget()
         self.table.setColumnCount(7)
-        self.table.setHorizontalHeaderLabels([
-            "Delete?", "Name", "Birthday", "Weight", "Height", "Row #", "File"
-        ])
-        
+        self.table.setHorizontalHeaderLabels(
+            ["Delete?", "Name", "Birthday", "Weight", "Height", "Row #", "File"]
+        )
+
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Interactive)
         header.setStretchLastSection(True)
@@ -160,12 +172,12 @@ class ExcelDuplicateDialog(QDialog):
             self.table.setCellWidget(row_i, 0, self._centered_widget(chk))
 
             vals = [
-                rec.get('raw_name', ''),
-                format_display_date(rec.get('birthday', '')),
-                str(rec.get('weight', '—')),
-                str(rec.get('height', '—')),
-                str(rec.get('row_number', '?')),
-                os.path.basename(rec.get('file_path', '')),
+                rec.get("raw_name", ""),
+                format_display_date(rec.get("birthday", "")),
+                str(rec.get("weight", "—")),
+                str(rec.get("height", "—")),
+                str(rec.get("row_number", "?")),
+                os.path.basename(rec.get("file_path", "")),
             ]
             for col_i, val in enumerate(vals, start=1):
                 item = QTableWidgetItem(val)
@@ -174,15 +186,17 @@ class ExcelDuplicateDialog(QDialog):
                 elif col_i == 6:  # File column
                     # Left-align file name and add tooltip for full visibility
                     item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-                    item.setToolTip(rec.get('file_path', ''))
+                    item.setToolTip(rec.get("file_path", ""))
                 else:
                     item.setTextAlignment(Qt.AlignCenter)
                 self.table.setItem(row_i, col_i, item)
         self.table.resizeColumnsToContents()
 
     def _centered_widget(self, widget):
-        container = __import__('PySide6.QtWidgets', fromlist=['QWidget']).QWidget()
-        layout = __import__('PySide6.QtWidgets', fromlist=['QHBoxLayout']).QHBoxLayout(container)
+        container = __import__("PySide6.QtWidgets", fromlist=["QWidget"]).QWidget()
+        layout = __import__("PySide6.QtWidgets", fromlist=["QHBoxLayout"]).QHBoxLayout(
+            container
+        )
         layout.addWidget(widget)
         layout.setAlignment(Qt.AlignCenter)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -198,8 +212,12 @@ class ExcelDuplicateDialog(QDialog):
             self.lbl_status.setStyleSheet("color: #2980b9; font-size: 11px;")
         elif num_checked == total_rows:
             self.btn_delete.setEnabled(False)
-            self.lbl_status.setText("⚠ You cannot delete ALL occurrences. At least one row must be retained.")
-            self.lbl_status.setStyleSheet("color: #c0392b; font-size: 11px; font-weight: bold;")
+            self.lbl_status.setText(
+                "⚠ You cannot delete ALL occurrences. At least one row must be retained."  # noqa: E501
+            )
+            self.lbl_status.setStyleSheet(
+                "color: #c0392b; font-size: 11px; font-weight: bold;"
+            )
         else:
             self.btn_delete.setEnabled(True)
             self.lbl_status.setText("Select duplicate rows to delete.")
@@ -207,9 +225,12 @@ class ExcelDuplicateDialog(QDialog):
 
     def on_delete(self):
         from ui.auth_guard import require_permission
+
         if not require_permission(self, self._current_user(), "delete_excel_row"):
             return
-        selected_indices = [i for i, chk in enumerate(self.checkboxes) if chk.isChecked()]
+        selected_indices = [
+            i for i, chk in enumerate(self.checkboxes) if chk.isChecked()
+        ]
         if not selected_indices:
             return
 
@@ -221,13 +242,13 @@ class ExcelDuplicateDialog(QDialog):
         confirm = QMessageBox.warning(
             self,
             "Confirm Row Deletion",
-            f"You are about to PERMANENTLY DELETE {len(selected_rows)} row(s) from Excel:\n\n"
+            f"You are about to PERMANENTLY DELETE {len(selected_rows)} row(s) from Excel:\n\n"  # noqa: E501
             f"{summary}\n\n"
             "⚠  This will also clear the inter-file index cache.\n"
             "The rows will be removed and remaining rows will shift up.\n\n"
             "Are you sure?",
             QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.No,
         )
 
         if confirm != QMessageBox.Yes:
@@ -238,20 +259,23 @@ class ExcelDuplicateDialog(QDialog):
         # Group by file and sort row numbers DESCENDING so deleting lower rows
         # doesn't shift the row numbers of rows we haven't deleted yet
         from collections import defaultdict
+
         by_file = defaultdict(list)
         for rec in selected_rows:
-            by_file[rec.get('file_path', '')].append(rec)
+            by_file[rec.get("file_path", "")].append(rec)
 
         errors = []
         deleted = 0
         for file_path, recs in by_file.items():
             # Sort descending so bottom rows deleted first
-            for rec in sorted(recs, key=lambda r: r.get('row_number', 0), reverse=True):
-                ok, err = delete_excel_row(file_path, rec.get('row_number'))
+            for rec in sorted(recs, key=lambda r: r.get("row_number", 0), reverse=True):
+                ok, err = delete_excel_row(file_path, rec.get("row_number"))
                 if ok:
                     deleted += 1
                 else:
-                    errors.append(f"{os.path.basename(file_path)} row {rec.get('row_number')}: {err}")
+                    errors.append(
+                        f"{os.path.basename(file_path)} row {rec.get('row_number')}: {err}"  # noqa: E501
+                    )
 
         # Clear inter-file index cache
         try:
@@ -261,27 +285,39 @@ class ExcelDuplicateDialog(QDialog):
         except Exception as e:
             errors.append(f"Cache clear failed: {e}")
 
-
         # Refresh table — remove deleted rows
-        deleted_file_rows = {(r.get('file_path'), r.get('row_number')) for r in selected_rows}
-        self.rows = [r for r in self.rows if (r.get('file_path'), r.get('row_number')) not in deleted_file_rows]
+        deleted_file_rows = {
+            (r.get("file_path"), r.get("row_number")) for r in selected_rows
+        }
+        self.rows = [
+            r
+            for r in self.rows
+            if (r.get("file_path"), r.get("row_number")) not in deleted_file_rows
+        ]
         self.checkboxes = []
         self.populate_table()
 
         if errors:
-            self.lbl_status.setText(f"⚠  {deleted} row(s) deleted. {len(errors)} error(s) occurred.")
-            QMessageBox.warning(self, "Partial Success", "Some rows could not be deleted:\n" + "\n".join(errors))
+            self.lbl_status.setText(
+                f"⚠  {deleted} row(s) deleted. {len(errors)} error(s) occurred."
+            )
+            QMessageBox.warning(
+                self,
+                "Partial Success",
+                "Some rows could not be deleted:\n" + "\n".join(errors),
+            )
         else:
             self.lbl_status.setText(
-                f"✅  {deleted} row(s) deleted. Inter-file index cache cleared — will rebuild on next scan."
+                f"✅  {deleted} row(s) deleted. Inter-file index cache cleared — will rebuild on next scan."  # noqa: E501
             )
 
         # ── Cross-Delete Workflow: Check Database ─────────────────────────────
         # Extract name from "LASTNAME, FIRSTNAME"
-        name_parts = self.dup_entry.get('name', '').split(', ', 1)
+        name_parts = self.dup_entry.get("name", "").split(", ", 1)
         if len(name_parts) == 2:
             ln, fn = name_parts[0], name_parts[1]
             from core.database import find_beneficiaries_by_name
+
             db_matches = find_beneficiaries_by_name(ln, fn)
 
             if db_matches:
@@ -289,17 +325,19 @@ class ExcelDuplicateDialog(QDialog):
                     self,
                     "Database Records Found",
                     f"Successfully deleted from Excel.\n\n"
-                    f"We also found {len(db_matches)} record(s) for '{fn} {ln}' in the Database.\n\n"
-                    f"Would you like to review and delete them from the Database as well?",
+                    f"We also found {len(db_matches)} record(s) for '{fn} {ln}' in the Database.\n\n"  # noqa: E501
+                    f"Would you like to review and delete them from the Database as well?",  # noqa: E501
                     QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.Yes
+                    QMessageBox.Yes,
                 )
                 if db_confirm == QMessageBox.Yes:
                     from ui.components.db_duplicate_dialog import DBDuplicateDialog
+
                     db_dlg = DBDuplicateDialog(db_matches, parent=self)
                     db_dlg.exec()
 
         if len(self.rows) <= 1:
-            QMessageBox.information(self, "Done", "Duplicate resolved! Only one occurrence remains.")
+            QMessageBox.information(
+                self, "Done", "Duplicate resolved! Only one occurrence remains."
+            )
             self.accept()
-

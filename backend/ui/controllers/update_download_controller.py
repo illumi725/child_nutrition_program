@@ -1,4 +1,5 @@
 """Download dialog and handoff script for updates (extracted from UpdateController)."""
+
 from __future__ import annotations
 
 import os
@@ -6,7 +7,6 @@ import subprocess
 import sys
 import tempfile
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -33,8 +33,12 @@ class UpdateProgressDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
 
-        self.lbl_title = QLabel(f"Downloading HAPAG Form 5A Comparator {latest_version}...")
-        self.lbl_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #2c3e50;")
+        self.lbl_title = QLabel(
+            f"Downloading HAPAG Form 5A Comparator {latest_version}..."
+        )
+        self.lbl_title.setStyleSheet(
+            "font-weight: bold; font-size: 13px; color: #2c3e50;"
+        )
 
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setRange(0, 100)

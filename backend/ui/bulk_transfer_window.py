@@ -1,10 +1,20 @@
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QPushButton, QTableWidget, QTableWidgetItem, QHeaderView,
-    QFrame, QAbstractItemView, QMessageBox, QCheckBox, QWidget
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QComboBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QFrame,
+    QAbstractItemView,
+    QMessageBox,
+    QCheckBox,
+    QWidget,
 )
 from PySide6.QtCore import Qt
-import datetime
 
 
 class BulkTransferWindow(QDialog):
@@ -37,11 +47,13 @@ class BulkTransferWindow(QDialog):
         lbl_title.setStyleSheet("font-size: 18px; font-weight: bold;")
         lbl_title.setWordWrap(True)
         header_layout.addWidget(lbl_title)
-        
-        lbl_sub = QLabel("Select a source site, select multiple beneficiaries, and transfer them in one batch.")
+
+        lbl_sub = QLabel(
+            "Select a source site, select multiple beneficiaries, and transfer them in one batch."  # noqa: E501
+        )
         lbl_sub.setStyleSheet("font-size: 12px; margin-top: 2px;")
         lbl_sub.setWordWrap(True)
-        
+
         layout.addWidget(lbl_title)
         layout.addWidget(lbl_sub)
 
@@ -57,7 +69,7 @@ class BulkTransferWindow(QDialog):
 
         lbl_src = QLabel("Source Feeding Site:")
         lbl_src.setStyleSheet("font-weight: bold; font-size: 13px; border: none;")
-        
+
         self.cmb_source = QComboBox()
         self.cmb_source.setMinimumWidth(350)
         self.cmb_source.currentIndexChanged.connect(self.on_source_site_changed)
@@ -65,7 +77,7 @@ class BulkTransferWindow(QDialog):
         src_layout.addWidget(lbl_src)
         src_layout.addWidget(self.cmb_source)
         src_layout.addStretch()
-        
+
         layout.addWidget(src_frame)
 
         # Status / Instructions Label
@@ -77,10 +89,18 @@ class BulkTransferWindow(QDialog):
         # Beneficiaries Grid
         self.table = QTableWidget()
         self.table.setColumnCount(8)
-        self.table.setHorizontalHeaderLabels([
-            "Select", "ID", "Last Name", "First Name", "Middle Name",
-            "Birthday", "Gender", "Registered On"
-        ])
+        self.table.setHorizontalHeaderLabels(
+            [
+                "Select",
+                "ID",
+                "Last Name",
+                "First Name",
+                "Middle Name",
+                "Birthday",
+                "Gender",
+                "Registered On",
+            ]
+        )
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table.setWordWrap(False)
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.Interactive)
@@ -139,37 +159,38 @@ class BulkTransferWindow(QDialog):
         btn_close.clicked.connect(self.accept)
         btn_box.addStretch()
         btn_box.addWidget(btn_close)
-        
+
         layout.addLayout(btn_box)
 
     def load_sites(self):
         from core.database import get_sites
+
         self.sites = get_sites()
-        
+
         # Populate comboboxes
         self.cmb_source.blockSignals(True)
         self.cmb_source.clear()
         self.cmb_source.addItem(" -- Choose Source Site -- ", userData=None)
-        
+
         for s in self.sites:
-            batch_str = f" - Batch {s['batch']}" if s.get('batch') else ""
+            batch_str = f" - Batch {s['batch']}" if s.get("batch") else ""
             display_text = f"{s['site_name']} ({s['barangay_name']}){batch_str}"
-            self.cmb_source.addItem(display_text, userData=s['site_id'])
-            
+            self.cmb_source.addItem(display_text, userData=s["site_id"])
+
         self.cmb_source.blockSignals(False)
         self.update_target_combobox(None)
 
     def update_target_combobox(self, exclude_site_id):
         self.cmb_target.clear()
-        
+
         count = 0
         for s in self.sites:
-            if s['site_id'] != exclude_site_id:
-                batch_str = f" - Batch {s['batch']}" if s.get('batch') else ""
+            if s["site_id"] != exclude_site_id:
+                batch_str = f" - Batch {s['batch']}" if s.get("batch") else ""
                 display_text = f"{s['site_name']} ({s['barangay_name']}){batch_str}"
-                self.cmb_target.addItem(display_text, userData=s['site_id'])
+                self.cmb_target.addItem(display_text, userData=s["site_id"])
                 count += 1
-                
+
         if count == 0:
             self.cmb_target.addItem("No alternative sites available", userData=None)
             self.cmb_target.setEnabled(False)
@@ -191,14 +212,17 @@ class BulkTransferWindow(QDialog):
 
     def load_beneficiaries(self, site_id):
         from core.database import get_beneficiaries_by_site
+
         self.lbl_status.setText("Loading beneficiaries...")
-        
+
         try:
             records = get_beneficiaries_by_site(site_id)
             self.beneficiaries = records
-            
+
             if not records:
-                self.lbl_status.setText("❌ No active beneficiaries registered at this feeding site.")
+                self.lbl_status.setText(
+                    "❌ No active beneficiaries registered at this feeding site."
+                )
                 return
 
             self.lbl_status.setText(
@@ -213,20 +237,20 @@ class BulkTransferWindow(QDialog):
                 chk_layout = QHBoxLayout(chk_widget)
                 chk_layout.setContentsMargins(0, 0, 0, 0)
                 chk_layout.setAlignment(Qt.AlignCenter)
-                
+
                 chk_box = QCheckBox()
                 chk_box.stateChanged.connect(lambda state: self.update_action_state())
                 chk_layout.addWidget(chk_box)
                 self.table.setCellWidget(row_idx, 0, chk_widget)
-                
+
                 values = [
-                    rec.get('beneficiary_id', ''),
-                    rec.get('lastname', ''),
-                    rec.get('firstname', ''),
-                    rec.get('middlename', '') or '—',
-                    str(rec.get('birthday', '')),
-                    rec.get('gender', ''),
-                    str(rec.get('registration_date', ''))
+                    rec.get("beneficiary_id", ""),
+                    rec.get("lastname", ""),
+                    rec.get("firstname", ""),
+                    rec.get("middlename", "") or "—",
+                    str(rec.get("birthday", "")),
+                    rec.get("gender", ""),
+                    str(rec.get("registration_date", "")),
                 ]
                 for col_idx, val in enumerate(values):
                     item = QTableWidgetItem(str(val))
@@ -240,7 +264,9 @@ class BulkTransferWindow(QDialog):
             self.update_action_state()
         except Exception as e:
             self.lbl_status.setText(f"❌ Error loading records: {e}")
-            QMessageBox.critical(self, "Database Error", f"Failed to query beneficiaries:\n{e}")
+            QMessageBox.critical(
+                self, "Database Error", f"Failed to query beneficiaries:\n{e}"
+            )
 
     def get_selected_rows(self):
         selected_rows = []
@@ -260,14 +286,16 @@ class BulkTransferWindow(QDialog):
 
     def on_transfer_clicked(self):
         selected_rows = self.get_selected_rows()
-        
+
         if not selected_rows:
             return
 
         target_site_id = self.cmb_target.currentData()
         target_site_name = self.cmb_target.currentText()
         if not target_site_id:
-            QMessageBox.warning(self, "No Target Site", "Please select a target feeding site.")
+            QMessageBox.warning(
+                self, "No Target Site", "Please select a target feeding site."
+            )
             return
 
         # Gather beneficiary IDs and names
@@ -285,25 +313,33 @@ class BulkTransferWindow(QDialog):
 
         # Show interactive confirmation dialogue listing the items to move
         confirm_msg = (
-            f"Are you sure you want to relocate the following {len(beneficiary_ids)} beneficiary(ies) to:\n"
-            f"👉 <b>{target_site_name}</b>?\n\n" +
-            "\n".join(f"• {name} (ID: {bid})" for name, bid in zip(beneficiary_names[:10], beneficiary_ids[:10]))
+            f"Are you sure you want to relocate the following {len(beneficiary_ids)} beneficiary(ies) to:\n"  # noqa: E501
+            f"👉 <b>{target_site_name}</b>?\n\n"
+            + "\n".join(
+                f"• {name} (ID: {bid})"
+                for name, bid in zip(beneficiary_names[:10], beneficiary_ids[:10])
+            )
         )
         if len(beneficiary_ids) > 10:
             confirm_msg += f"\n... and {len(beneficiary_ids) - 10} more."
 
         reply = QMessageBox.question(
-            self, "Confirm Bulk Relocation", confirm_msg,
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            self,
+            "Confirm Bulk Relocation",
+            confirm_msg,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
             from core.database import bulk_transfer_beneficiaries
+
             success, err = bulk_transfer_beneficiaries(beneficiary_ids, target_site_id)
             if success:
                 parent = self.parent()
                 if parent and getattr(parent, "current_user", None):
                     from core.audit import audit_user_id, log_action
+
                     log_action(
                         audit_user_id(parent.current_user),
                         "bulk_transfer",
@@ -315,14 +351,14 @@ class BulkTransferWindow(QDialog):
                         },
                     )
                 QMessageBox.information(
-                    self, "Success",
-                    f"Successfully relocated {len(beneficiary_ids)} beneficiary(ies) to {target_site_name}."
+                    self,
+                    "Success",
+                    f"Successfully relocated {len(beneficiary_ids)} beneficiary(ies) to {target_site_name}.",  # noqa: E501
                 )
                 # Refresh table by reloading beneficiaries for current source site
                 source_site_id = self.cmb_source.currentData()
                 self.load_beneficiaries(source_site_id)
             else:
                 QMessageBox.critical(
-                    self, "Transfer Failed",
-                    f"Failed to execute bulk transfer:\n{err}"
+                    self, "Transfer Failed", f"Failed to execute bulk transfer:\n{err}"
                 )

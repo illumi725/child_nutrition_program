@@ -1,4 +1,5 @@
 """Layout builder for MainWindow UI elements."""
+
 from __future__ import annotations
 
 import os
@@ -55,19 +56,25 @@ class LayoutController:
         left_layout = QVBoxLayout(left_panel)
 
         base_dir = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "HAPAG APPROVED BASELINE")
+            os.path.join(
+                os.path.dirname(__file__), "..", "..", "HAPAG APPROVED BASELINE"
+            )
         )
         if not os.path.exists(base_dir):
             base_dir = os.path.expanduser("~")
 
         self._win.file_explorer = FileExplorer(base_dir)
-        self._win.file_explorer.files_selected.connect(self._win.file_explorer_controller.on_files_selected)
+        self._win.file_explorer.files_selected.connect(
+            self._win.file_explorer_controller.on_files_selected
+        )
 
         self._win.btn_browse = QPushButton("Browse Folder...")
         self._win.btn_browse.setStyleSheet(
             "padding: 5px; background-color: #34495e; color: white;"
         )
-        self._win.btn_browse.clicked.connect(self._win.file_explorer_controller.on_browse_folder)
+        self._win.btn_browse.clicked.connect(
+            self._win.file_explorer_controller.on_browse_folder
+        )
 
         self._win.btn_scan = QPushButton("Scan Selected Files")
         self._win.btn_scan.setEnabled(False)
@@ -77,9 +84,11 @@ class LayoutController:
             "padding: 4px; background-color: #7f8c8d; color: white; font-size: 11px;"
         )
         self._win.btn_rebuild_index.setToolTip(
-            "Delete the cached inter-file duplicate index so it is rebuilt from scratch on the next scan."
+            "Delete the cached inter-file duplicate index so it is rebuilt from scratch on the next scan."  # noqa: E501
         )
-        self._win.btn_rebuild_index.clicked.connect(self._win.file_explorer_controller.on_rebuild_index)
+        self._win.btn_rebuild_index.clicked.connect(
+            self._win.file_explorer_controller.on_rebuild_index
+        )
 
         left_layout.addWidget(QLabel("Local Directory Scanner"))
         left_layout.addWidget(self._win.btn_browse)
@@ -150,16 +159,34 @@ class LayoutController:
         self._win.grid_excel_duplicates = ResultsDataGrid()
         self._win.grid_db_duplicates = ResultsDataGrid()
 
-        self._win.grid_exact.action_triggered.connect(self._win.record_action_controller.on_grid_action)
-        self._win.grid_fuzzy.action_triggered.connect(self._win.record_action_controller.on_grid_action)
-        self._win.grid_potential.action_triggered.connect(self._win.record_action_controller.on_grid_action)
-        self._win.grid_bday.action_triggered.connect(self._win.record_action_controller.on_bday_action)
-        self._win.grid_name.action_triggered.connect(self._win.record_action_controller.on_name_action)
-        self._win.grid_missing_db.action_triggered.connect(self._win.record_action_controller.on_missing_db_action)
-        self._win.grid_missing_excel.action_triggered.connect(self._win.record_action_controller.on_missing_excel_action)
+        self._win.grid_exact.action_triggered.connect(
+            self._win.record_action_controller.on_grid_action
+        )
+        self._win.grid_fuzzy.action_triggered.connect(
+            self._win.record_action_controller.on_grid_action
+        )
+        self._win.grid_potential.action_triggered.connect(
+            self._win.record_action_controller.on_grid_action
+        )
+        self._win.grid_bday.action_triggered.connect(
+            self._win.record_action_controller.on_bday_action
+        )
+        self._win.grid_name.action_triggered.connect(
+            self._win.record_action_controller.on_name_action
+        )
+        self._win.grid_missing_db.action_triggered.connect(
+            self._win.record_action_controller.on_missing_db_action
+        )
+        self._win.grid_missing_excel.action_triggered.connect(
+            self._win.record_action_controller.on_missing_excel_action
+        )
 
-        self._win.grid_excel_duplicates.action_triggered.connect(self._win.duplicate_controller.on_excel_dup_action)
-        self._win.grid_db_duplicates.action_triggered.connect(self._win.duplicate_controller.on_db_dup_action)
+        self._win.grid_excel_duplicates.action_triggered.connect(
+            self._win.duplicate_controller.on_excel_dup_action
+        )
+        self._win.grid_db_duplicates.action_triggered.connect(
+            self._win.duplicate_controller.on_db_dup_action
+        )
 
     def _build_tabs(self) -> None:
         self._win.exact_tab_widget = QWidget()
@@ -180,7 +207,9 @@ class LayoutController:
         fuzzy_layout = QVBoxLayout(self._win.fuzzy_tab_widget)
         fuzzy_layout.setContentsMargins(0, 0, 0, 0)
 
-        self._win.btn_bulk_sync_fuzzy = QPushButton("⚡ Bulk Sync Baseline — High Confidence")
+        self._win.btn_bulk_sync_fuzzy = QPushButton(
+            "⚡ Bulk Sync Baseline — High Confidence"
+        )
         self._win.btn_bulk_sync_fuzzy.setStyleSheet(
             "background-color: #e67e22; color: white; font-weight: bold; padding: 5px;"
         )
@@ -194,7 +223,9 @@ class LayoutController:
         potential_layout = QVBoxLayout(self._win.potential_tab_widget)
         potential_layout.setContentsMargins(0, 0, 0, 0)
 
-        self._win.btn_bulk_sync_potential = QPushButton("⚡ Bulk Sync Baseline — Review Required")
+        self._win.btn_bulk_sync_potential = QPushButton(
+            "⚡ Bulk Sync Baseline — Review Required"
+        )
         self._win.btn_bulk_sync_potential.setStyleSheet(
             "background-color: #c0392b; color: white; font-weight: bold; padding: 5px;"
         )
@@ -269,7 +300,9 @@ class LayoutController:
             QPushButton:checked { background: #1a252f; }
             """
         )
-        self._win.btn_console_toggle.toggled.connect(self._win.console_controller.toggle_console)
+        self._win.btn_console_toggle.toggled.connect(
+            self._win.console_controller.toggle_console
+        )
 
         btn_clear = QPushButton("Clear")
         btn_clear.setStyleSheet("font-size: 10px; padding: 2px 6px; color: #7f8c8d;")

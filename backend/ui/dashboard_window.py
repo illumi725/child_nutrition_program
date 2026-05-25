@@ -4,17 +4,27 @@ import os
 
 logger = logging.getLogger(__name__)
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QProgressBar, QGridLayout, QFrame,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
+from PySide6.QtWidgets import (  # noqa: E402
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QProgressBar,
+    QGridLayout,
+    QFrame,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QAbstractItemView,
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QCursor
-from ui.workers import GlobalStatsWorker
+from PySide6.QtCore import Qt, Signal  # noqa: E402
+from PySide6.QtGui import QCursor  # noqa: E402
+from ui.workers import GlobalStatsWorker  # noqa: E402
 
 
 # ─── Detail List Dialog ──────────────────────────────────────────────────────
+
 
 class RecordListDialog(QDialog):
     def __init__(self, title, records, columns, parent=None):
@@ -24,8 +34,9 @@ class RecordListDialog(QDialog):
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
 
         screen = self.screen().availableGeometry()
-        self.move((screen.width() - self.width()) // 2,
-                  (screen.height() - self.height()) // 2)
+        self.move(
+            (screen.width() - self.width()) // 2, (screen.height() - self.height()) // 2
+        )
 
         layout = QVBoxLayout(self)
 
@@ -64,7 +75,12 @@ class RecordListDialog(QDialog):
                 item = QTableWidgetItem(str(val) if val is not None else "—")
                 key_lower = str(col.get("key", "")).lower()
                 label_lower = str(col.get("label", "")).lower()
-                if "name" in key_lower or "name" in label_lower or "file" in key_lower or "file" in label_lower:
+                if (
+                    "name" in key_lower
+                    or "name" in label_lower
+                    or "file" in key_lower
+                    or "file" in label_lower
+                ):
                     item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
                 else:
                     item.setTextAlignment(Qt.AlignCenter)
@@ -80,6 +96,7 @@ class RecordListDialog(QDialog):
 
 # ─── Clickable Stat Card ─────────────────────────────────────────────────────
 
+
 class StatCard(QFrame):
     clicked = Signal()
 
@@ -89,7 +106,7 @@ class StatCard(QFrame):
         self._records = []
         self._columns = []
         self._title = title
-        self._open_db_manager = False   # set True for DB duplicates card
+        self._open_db_manager = False  # set True for DB duplicates card
 
         self.setStyleSheet(f"""
             QFrame {{
@@ -109,7 +126,9 @@ class StatCard(QFrame):
         lbl_title.setAlignment(Qt.AlignCenter)
 
         self.lbl_value = QLabel("-")
-        self.lbl_value.setStyleSheet(f"font-size: 32px; font-weight: bold; border: none;")
+        self.lbl_value.setStyleSheet(
+            "font-size: 32px; font-weight: bold; border: none;"
+        )
         self.lbl_value.setAlignment(Qt.AlignCenter)
 
         self.lbl_hint = QLabel("Click to view list")
@@ -132,35 +151,45 @@ class StatCard(QFrame):
             self.clicked.emit()
             if self._open_db_manager:
                 # Group records by (lastname, firstname) and show manager picker
-                from ui.components.db_duplicate_dialog import DBDuplicateDialog
                 from collections import defaultdict
+
                 groups = defaultdict(list)
                 for r in self._records:
-                    key = (str(r.get('lastname', '')).upper(), str(r.get('firstname', '')).upper())
+                    key = (
+                        str(r.get("lastname", "")).upper(),
+                        str(r.get("firstname", "")).upper(),
+                    )
                     groups[key].append(r)
                 dup_groups = [g for g in groups.values() if len(g) > 1]
                 if not dup_groups:
                     from PySide6.QtWidgets import QMessageBox
-                    QMessageBox.information(self.window(), "No Duplicates", "No groups with more than one record found.")
+
+                    QMessageBox.information(
+                        self.window(),
+                        "No Duplicates",
+                        "No groups with more than one record found.",
+                    )
                     return
                 # Show a picker dialog listing each duplicate group
                 picker = DupGroupPickerDialog(dup_groups, self.window())
                 picker.exec()
             else:
-                dialog = RecordListDialog(self._title, self._records, self._columns, self.window())
+                dialog = RecordListDialog(
+                    self._title, self._records, self._columns, self.window()
+                )
                 dialog.exec()
         super().mousePressEvent(event)
 
     def set_db_manager_mode(self, enabled: bool):
-        """Enable special mode: clicking opens DBDuplicateDialog instead of generic list."""
+        """Enable special mode: clicking opens DBDuplicateDialog instead of generic list."""  # noqa: E501
         self._open_db_manager = enabled
-
 
 
 # ─── Duplicate Group Picker ───────────────────────────────────────────────────
 
+
 class DupGroupPickerDialog(QDialog):
-    """Lists all duplicate name groups; double-click a group to open DBDuplicateDialog."""
+    """Lists all duplicate name groups; double-click a group to open DBDuplicateDialog."""  # noqa: E501
 
     def __init__(self, dup_groups, parent=None):
         super().__init__(parent)
@@ -168,12 +197,15 @@ class DupGroupPickerDialog(QDialog):
         self.setWindowTitle("DB Duplicate Groups")
         self.resize(600, 400)
         screen = self.screen().availableGeometry()
-        self.move((screen.width() - self.width()) // 2,
-                  (screen.height() - self.height()) // 2)
+        self.move(
+            (screen.width() - self.width()) // 2, (screen.height() - self.height()) // 2
+        )
 
         layout = QVBoxLayout(self)
 
-        lbl = QLabel(f"Found {len(dup_groups)} duplicate name group(s). Double-click a group to manage it.")
+        lbl = QLabel(
+            f"Found {len(dup_groups)} duplicate name group(s). Double-click a group to manage it."  # noqa: E501
+        )
         lbl.setStyleSheet("font-size: 13px; font-weight: bold; margin-bottom: 4px;")
         lbl.setWordWrap(True)
         layout.addWidget(lbl)
@@ -203,8 +235,8 @@ class DupGroupPickerDialog(QDialog):
         for i, group in enumerate(dup_groups):
             r0 = group[0]
             name = f"{r0.get('lastname', '')}, {r0.get('firstname', '')}"
-            ids  = ", ".join(str(r.get('beneficiary_id', '')) for r in group)
-            sites = ", ".join(set(str(r.get('site_name', '—')) for r in group))
+            ids = ", ".join(str(r.get("beneficiary_id", "")) for r in group)
+            sites = ", ".join(set(str(r.get("site_name", "—")) for r in group))
             for col, val in enumerate([name, str(len(group)), ids, sites]):
                 item = QTableWidgetItem(val)
                 if col == 0:  # Name column
@@ -225,6 +257,7 @@ class DupGroupPickerDialog(QDialog):
         row = index.row()
         if row < len(self.dup_groups):
             from ui.components.db_duplicate_dialog import DBDuplicateDialog
+
             dlg = DBDuplicateDialog(self.dup_groups[row], parent=self)
             dlg.exec()
 
@@ -232,27 +265,31 @@ class DupGroupPickerDialog(QDialog):
 # ─── Column Definitions ───────────────────────────────────────────────────────
 
 DB_COLS = [
-    {"label": "ID",          "key": "beneficiary_id"},
-    {"label": "Last Name",   "key": "lastname"},
-    {"label": "First Name",  "key": "firstname"},
+    {"label": "ID", "key": "beneficiary_id"},
+    {"label": "Last Name", "key": "lastname"},
+    {"label": "First Name", "key": "firstname"},
     {"label": "Middle Name", "key": "middlename"},
-    {"label": "Birthday",    "key": "birthday"},
-    {"label": "Gender",      "key": "gender"},
-    {"label": "Site",        "key": "site_name"},
+    {"label": "Birthday", "key": "birthday"},
+    {"label": "Gender", "key": "gender"},
+    {"label": "Site", "key": "site_name"},
 ]
 
 EXCEL_COLS = [
-    {"label": "Name",     "key": "raw_name"},
+    {"label": "Name", "key": "raw_name"},
     {"label": "Birthday", "key": "birthday"},
-    {"label": "Gender",   "key": "gender"},
-    {"label": "Weight",   "key": "weight"},
-    {"label": "Height",   "key": "height"},
-    {"label": "File",     "key": "file_path",
-     "getter": lambda r: os.path.basename(r.get("file_path", ""))},
+    {"label": "Gender", "key": "gender"},
+    {"label": "Weight", "key": "weight"},
+    {"label": "Height", "key": "height"},
+    {
+        "label": "File",
+        "key": "file_path",
+        "getter": lambda r: os.path.basename(r.get("file_path", "")),
+    },
 ]
 
 
 # ─── Dashboard Window ─────────────────────────────────────────────────────────
+
 
 class DashboardWindow(QDialog):
     def __init__(self, base_dir, parent=None):
@@ -263,8 +300,9 @@ class DashboardWindow(QDialog):
         self.setup_ui()
 
         screen = self.screen().availableGeometry()
-        self.move((screen.width() - self.width()) // 2,
-                  (screen.height() - self.height()) // 2)
+        self.move(
+            (screen.width() - self.width()) // 2, (screen.height() - self.height()) // 2
+        )
 
         # Try to load from cache first
         if not self._load_cache():
@@ -278,7 +316,7 @@ class DashboardWindow(QDialog):
         header.setAlignment(Qt.AlignCenter)
         layout.addWidget(header)
 
-        self.lbl_status = QLabel(f"Loading…")
+        self.lbl_status = QLabel("Loading…")
         self.lbl_status.setAlignment(Qt.AlignCenter)
         self.lbl_status.setStyleSheet("font-size: 11px;")
         layout.addWidget(self.lbl_status)
@@ -290,19 +328,19 @@ class DashboardWindow(QDialog):
         grid = QGridLayout()
         grid.setSpacing(10)
 
-        self.card_db_total   = StatCard("Total DB Beneficiaries",      "#2980b9")
-        self.card_ex_total   = StatCard("Total Excel Beneficiaries",   "#27ae60")
-        self.card_missing_db = StatCard("Missing in DB (Excel Only)",  "#e74c3c")
-        self.card_missing_ex = StatCard("Missing in Excel (DB Only)",  "#f39c12")
-        self.card_db_dupes   = StatCard("DB Duplicates",               "#8e44ad")
-        self.card_ex_dupes   = StatCard("Excel Duplicates",            "#c0392b")
+        self.card_db_total = StatCard("Total DB Beneficiaries", "#2980b9")
+        self.card_ex_total = StatCard("Total Excel Beneficiaries", "#27ae60")
+        self.card_missing_db = StatCard("Missing in DB (Excel Only)", "#e74c3c")
+        self.card_missing_ex = StatCard("Missing in Excel (DB Only)", "#f39c12")
+        self.card_db_dupes = StatCard("DB Duplicates", "#8e44ad")
+        self.card_ex_dupes = StatCard("Excel Duplicates", "#c0392b")
 
-        grid.addWidget(self.card_db_total,   0, 0)
-        grid.addWidget(self.card_ex_total,   0, 1)
+        grid.addWidget(self.card_db_total, 0, 0)
+        grid.addWidget(self.card_ex_total, 0, 1)
         grid.addWidget(self.card_missing_db, 1, 0)
         grid.addWidget(self.card_missing_ex, 1, 1)
-        grid.addWidget(self.card_db_dupes,   2, 0)
-        grid.addWidget(self.card_ex_dupes,   2, 1)
+        grid.addWidget(self.card_db_dupes, 2, 0)
+        grid.addWidget(self.card_ex_dupes, 2, 1)
 
         layout.addLayout(grid)
 
@@ -330,7 +368,7 @@ class DashboardWindow(QDialog):
         try:
             if not os.path.exists(GlobalStatsWorker.CACHE_PATH):
                 return False
-            with open(GlobalStatsWorker.CACHE_PATH, 'r', encoding='utf-8') as f:
+            with open(GlobalStatsWorker.CACHE_PATH, "r", encoding="utf-8") as f:
                 stats = json.load(f)
             self._apply_stats(stats, from_cache=True)
             return True
@@ -341,27 +379,45 @@ class DashboardWindow(QDialog):
     def _apply_stats(self, stats, from_cache=False):
         scanned_at = stats.get("scanned_at", "Unknown")
         files = stats.get("files_scanned", "?")
-        base  = stats.get("base_dir", self.base_dir)
+        base = stats.get("base_dir", self.base_dir)
         if from_cache:
             self.lbl_status.setText(
-                f"📂  Loaded from cache  |  Last scanned: {scanned_at}  |  {files} file(s)  |  {base}"
+                f"📂  Loaded from cache  |  Last scanned: {scanned_at}  |  {files} file(s)  |  {base}"  # noqa: E501
             )
         else:
             self.lbl_status.setText(
                 f"✅  Scan complete  |  {scanned_at}  |  {files} file(s)  |  {base}"
             )
 
-        self.card_db_total.set_value(stats['total_db'],    records=stats.get('db_records', []),           columns=DB_COLS)
-        self.card_ex_total.set_value(stats['total_excel'], records=stats.get('excel_records', []),        columns=EXCEL_COLS)
-        self.card_missing_db.set_value(stats['missing_in_db'],  records=stats.get('missing_in_db_list', []),  columns=EXCEL_COLS)
-        self.card_missing_ex.set_value(stats['missing_in_excel'], records=stats.get('missing_in_excel_list', []), columns=DB_COLS)
+        self.card_db_total.set_value(
+            stats["total_db"], records=stats.get("db_records", []), columns=DB_COLS
+        )
+        self.card_ex_total.set_value(
+            stats["total_excel"],
+            records=stats.get("excel_records", []),
+            columns=EXCEL_COLS,
+        )
+        self.card_missing_db.set_value(
+            stats["missing_in_db"],
+            records=stats.get("missing_in_db_list", []),
+            columns=EXCEL_COLS,
+        )
+        self.card_missing_ex.set_value(
+            stats["missing_in_excel"],
+            records=stats.get("missing_in_excel_list", []),
+            columns=DB_COLS,
+        )
         self.card_db_dupes.set_value(
-            stats['db_duplicates'],
-            records=stats.get('db_duplicates_list', []),
-            columns=DB_COLS
+            stats["db_duplicates"],
+            records=stats.get("db_duplicates_list", []),
+            columns=DB_COLS,
         )
         self.card_db_dupes.set_db_manager_mode(True)  # opens DBDuplicateDialog on click
-        self.card_ex_dupes.set_value(stats['excel_duplicates'],records=stats.get('excel_duplicates_list', []),columns=EXCEL_COLS)
+        self.card_ex_dupes.set_value(
+            stats["excel_duplicates"],
+            records=stats.get("excel_duplicates_list", []),
+            columns=EXCEL_COLS,
+        )
 
     # ── Worker ────────────────────────────────────────────────────────────────
 

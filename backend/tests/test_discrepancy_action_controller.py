@@ -91,7 +91,9 @@ def test_on_missing_db_action_success(monkeypatch):
             return self._data
 
     fake_dialog_mod.EditBeneficiaryDialog = FakeDialog
-    monkeypatch.setitem(sys.modules, "ui.components.edit_beneficiary_dialog", fake_dialog_mod)
+    monkeypatch.setitem(
+        sys.modules, "ui.components.edit_beneficiary_dialog", fake_dialog_mod
+    )
 
     pyside6_mod = types.ModuleType("PySide6")
     fake_qt = make_fake_qtwidgets()
@@ -134,7 +136,11 @@ def test_on_bday_action_use_excel(monkeypatch):
     ctrl = DiscrepancyActionController(win)
     widget = DummyWidget()
 
-    record = {"excel": {"birthday": "2000-01-02"}, "db": {"beneficiary_id": 5, "lastname": "X", "firstname": "Y"}, "baseline_mismatch": True}
+    record = {
+        "excel": {"birthday": "2000-01-02"},
+        "db": {"beneficiary_id": 5, "lastname": "X", "firstname": "Y"},
+        "baseline_mismatch": True,
+    }
 
     ctrl.on_bday_action("use_excel", record, widget)
 

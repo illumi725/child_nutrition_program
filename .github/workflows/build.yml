@@ -112,8 +112,8 @@ jobs:
   # macOS BUILD
   # -----------------------------------------------------------
   build-macos:
-    name: Build macOS Executable (Intel x86_64)
-    runs-on: macos-13
+    name: Build macOS Executable
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -143,7 +143,7 @@ jobs:
 
       - name: Build with PyInstaller
         working-directory: backend
-        run: pyinstaller --target-arch x86_64 hapag_comparator.spec
+        run: pyinstaller hapag_comparator.spec
 
       - name: Compress output
         run: |

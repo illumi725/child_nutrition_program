@@ -25,17 +25,18 @@ class UserManualBrowser(QDialog):
         self.setWindowTitle("HAPAG Form 5A Comparator - User's Manual")
         self.resize(1000, 750)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
-        
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        
+
         from PySide6.QtWebEngineWidgets import QWebEngineView
         from PySide6.QtCore import QUrl
-        
+
         self.web_view = QWebEngineView(self)
         layout.addWidget(self.web_view)
-        
+
         import os
+
         base_dir = os.path.dirname(os.path.abspath(__file__))
         manual_path = os.path.join(base_dir, "manual.html")
         if os.path.exists(manual_path):
@@ -53,7 +54,7 @@ class MainWindow(QMainWindow):
 
         self.window_title_controller = WindowTitleController(self)
         user_display = (
-            f"{current_user['firstname']} {current_user['lastname']} ({current_user['role']})"
+            f"{current_user['firstname']} {current_user['lastname']} ({current_user['role']})"  # noqa: E501
             if current_user
             else "Unknown User"
         )
@@ -75,31 +76,41 @@ class MainWindow(QMainWindow):
             margin: 10px; 
             color: #2c3e50;
         """)
-        main_layout.addWidget(header, 0) # stretch=0
+        main_layout.addWidget(header, 0)  # stretch=0
 
         # Splitter for Sidebar and Main Content
         self.splitter = QSplitter(Qt.Horizontal)
-        main_layout.addWidget(self.splitter, 1) # stretch=1
+        main_layout.addWidget(self.splitter, 1)  # stretch=1
 
         # Left Sidebar (File Explorer + Actions)
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
-        
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "HAPAG APPROVED BASELINE"))
+
+        base_dir = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__), "..", "..", "HAPAG APPROVED BASELINE"
+            )
+        )
         if not os.path.exists(base_dir):
             base_dir = os.path.expanduser("~")
-            
+
         self.file_explorer = FileExplorer(base_dir)
-        
+
         self.btn_browse = QPushButton("Browse Folder...")
-        self.btn_browse.setStyleSheet("padding: 5px; background-color: #34495e; color: white;")
-        
+        self.btn_browse.setStyleSheet(
+            "padding: 5px; background-color: #34495e; color: white;"
+        )
+
         self.btn_scan = QPushButton("Scan Selected Files")
         self.btn_scan.setEnabled(False)
 
         self.btn_rebuild_index = QPushButton("🗂 Rebuild Inter-file Index")
-        self.btn_rebuild_index.setStyleSheet("padding: 4px; background-color: #7f8c8d; color: white; font-size: 11px;")
-        self.btn_rebuild_index.setToolTip("Delete the cached inter-file duplicate index so it is rebuilt from scratch on the next scan.")
+        self.btn_rebuild_index.setStyleSheet(
+            "padding: 4px; background-color: #7f8c8d; color: white; font-size: 11px;"
+        )
+        self.btn_rebuild_index.setToolTip(
+            "Delete the cached inter-file duplicate index so it is rebuilt from scratch on the next scan."  # noqa: E501
+        )
 
         left_layout.addWidget(QLabel("Local Directory Scanner"))
         left_layout.addWidget(self.btn_browse)
@@ -107,13 +118,12 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(self.btn_scan)
         left_layout.addWidget(self.btn_rebuild_index)
 
-
         self.splitter.addWidget(left_panel)
 
         # Right Panel (Results Tabs)
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
-        
+
         right_header_layout = QHBoxLayout()
         self.btn_settings = QPushButton("⚙ Settings")
         self.btn_about = QPushButton("ℹ️ About")
@@ -121,12 +131,13 @@ class MainWindow(QMainWindow):
         self.btn_dashboard = QPushButton("📊 Dashboard")
         self.btn_search_beneficiary = QPushButton("🔍 Search")
         self.btn_bulk_transfer = QPushButton("📦 Bulk Transfer")
-        
+
         from core.app_settings import get_theme
+
         current_theme = get_theme()
         btn_text = "☀️ Light" if current_theme == "dark" else "🌙 Dark"
         self.btn_theme_toggle = QPushButton(btn_text)
-        
+
         right_header_layout.addStretch()
         right_header_layout.addWidget(self.btn_theme_toggle)
         right_header_layout.addWidget(self.btn_search_beneficiary)
@@ -138,7 +149,7 @@ class MainWindow(QMainWindow):
         right_layout.addLayout(right_header_layout)
 
         self.tabs = QTabWidget()
-        
+
         # Setup Data Grids
         self.grid_exact = ResultsDataGrid()
         self.grid_fuzzy = ResultsDataGrid()
@@ -146,103 +157,121 @@ class MainWindow(QMainWindow):
         self.grid_missing_db = ResultsDataGrid()
         self.grid_bday = ResultsDataGrid()
         self.grid_name = ResultsDataGrid()
-        
+
         self.grid_missing_excel = ResultsDataGrid()
         self.grid_excel_duplicates = ResultsDataGrid()
         self.grid_db_duplicates = ResultsDataGrid()
-        
+
         # Exact Matches Tab Widget with Bulk Sync Button
         self.exact_tab_widget = QWidget()
         exact_layout = QVBoxLayout(self.exact_tab_widget)
         exact_layout.setContentsMargins(0, 0, 0, 0)
-        
+
         self.btn_bulk_sync = QPushButton("Bulk Sync All Exact Matches")
-        self.btn_bulk_sync.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bulk_sync.setStyleSheet(
+            "background-color: #27ae60; color: white; font-weight: bold; padding: 5px;"
+        )
         self.btn_bulk_sync.setEnabled(False)
-        
+
         exact_layout.addWidget(self.btn_bulk_sync)
         exact_layout.addWidget(self.grid_exact)
 
-        self.tabs.addTab(self.exact_tab_widget, "Exact Matches (0)") # Index 0
+        self.tabs.addTab(self.exact_tab_widget, "Exact Matches (0)")  # Index 0
 
         # High Confidence Tab Widget with Bulk Sync Button
         self.fuzzy_tab_widget = QWidget()
         fuzzy_layout = QVBoxLayout(self.fuzzy_tab_widget)
         fuzzy_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.btn_bulk_sync_fuzzy = QPushButton("⚡ Bulk Sync Baseline — High Confidence")
-        self.btn_bulk_sync_fuzzy.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bulk_sync_fuzzy = QPushButton(
+            "⚡ Bulk Sync Baseline — High Confidence"
+        )
+        self.btn_bulk_sync_fuzzy.setStyleSheet(
+            "background-color: #e67e22; color: white; font-weight: bold; padding: 5px;"
+        )
         self.btn_bulk_sync_fuzzy.setEnabled(False)
 
         fuzzy_layout.addWidget(self.btn_bulk_sync_fuzzy)
         fuzzy_layout.addWidget(self.grid_fuzzy)
 
-        self.tabs.addTab(self.fuzzy_tab_widget, "High Confidence (0)") # Index 1
+        self.tabs.addTab(self.fuzzy_tab_widget, "High Confidence (0)")  # Index 1
 
         # Review Required Tab Widget with Bulk Sync Button
         self.potential_tab_widget = QWidget()
         potential_layout = QVBoxLayout(self.potential_tab_widget)
         potential_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.btn_bulk_sync_potential = QPushButton("⚡ Bulk Sync Baseline — Review Required")
-        self.btn_bulk_sync_potential.setStyleSheet("background-color: #c0392b; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bulk_sync_potential = QPushButton(
+            "⚡ Bulk Sync Baseline — Review Required"
+        )
+        self.btn_bulk_sync_potential.setStyleSheet(
+            "background-color: #c0392b; color: white; font-weight: bold; padding: 5px;"
+        )
         self.btn_bulk_sync_potential.setEnabled(False)
 
         potential_layout.addWidget(self.btn_bulk_sync_potential)
         potential_layout.addWidget(self.grid_potential)
 
-        self.tabs.addTab(self.potential_tab_widget, "Review Required (0)") # Index 2
-        
+        self.tabs.addTab(self.potential_tab_widget, "Review Required (0)")  # Index 2
+
         # Name Discrepancies Tab Widget
         self.name_tab_widget = QWidget()
         name_layout = QVBoxLayout(self.name_tab_widget)
         name_layout.setContentsMargins(0, 0, 0, 0)
-        
+
         name_btn_layout = QHBoxLayout()
         self.btn_name_bulk_excel = QPushButton("Bulk Correct (Use Excel)")
         self.btn_name_bulk_db = QPushButton("Bulk Correct (Use DB)")
-        self.btn_name_bulk_excel.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 5px;")
-        self.btn_name_bulk_db.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
-        
+        self.btn_name_bulk_excel.setStyleSheet(
+            "background-color: #2980b9; color: white; font-weight: bold; padding: 5px;"
+        )
+        self.btn_name_bulk_db.setStyleSheet(
+            "background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;"
+        )
+
         self.btn_name_bulk_excel.setEnabled(False)
         self.btn_name_bulk_db.setEnabled(False)
-        
+
         name_btn_layout.addWidget(self.btn_name_bulk_excel)
         name_btn_layout.addWidget(self.btn_name_bulk_db)
-        
+
         name_layout.addLayout(name_btn_layout)
         name_layout.addWidget(self.grid_name)
 
-        self.tabs.addTab(self.name_tab_widget, "Name Discrepancies (0)") # Index 3
+        self.tabs.addTab(self.name_tab_widget, "Name Discrepancies (0)")  # Index 3
 
         # Birthday Discrepancies Tab Widget
         self.bday_tab_widget = QWidget()
         bday_layout = QVBoxLayout(self.bday_tab_widget)
         bday_layout.setContentsMargins(0, 0, 0, 0)
-        
+
         bday_btn_layout = QHBoxLayout()
         self.btn_bday_bulk_excel = QPushButton("Bulk Correct (Use Excel)")
         self.btn_bday_bulk_db = QPushButton("Bulk Correct (Use DB)")
-        self.btn_bday_bulk_excel.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 5px;")
-        self.btn_bday_bulk_db.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
-        
+        self.btn_bday_bulk_excel.setStyleSheet(
+            "background-color: #2980b9; color: white; font-weight: bold; padding: 5px;"
+        )
+        self.btn_bday_bulk_db.setStyleSheet(
+            "background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;"
+        )
+
         self.btn_bday_bulk_excel.setEnabled(False)
         self.btn_bday_bulk_db.setEnabled(False)
-        
+
         bday_btn_layout.addWidget(self.btn_bday_bulk_excel)
         bday_btn_layout.addWidget(self.btn_bday_bulk_db)
-        
+
         bday_layout.addLayout(bday_btn_layout)
         bday_layout.addWidget(self.grid_bday)
 
-        self.tabs.addTab(self.bday_tab_widget, "Birthday Discrepancies (0)") # Index 4
-        
-        self.tabs.addTab(self.grid_missing_db, "Missing in DB (0)") # Index 5
-        self.tabs.addTab(self.grid_missing_excel, "Missing in Excel (0)") # Index 6
-        self.tabs.addTab(self.grid_excel_duplicates, "Excel Duplicates (0)") # Index 7
-        self.tabs.addTab(self.grid_db_duplicates, "DB Duplicates (0)") # Index 8
+        self.tabs.addTab(self.bday_tab_widget, "Birthday Discrepancies (0)")  # Index 4
+
+        self.tabs.addTab(self.grid_missing_db, "Missing in DB (0)")  # Index 5
+        self.tabs.addTab(self.grid_missing_excel, "Missing in Excel (0)")  # Index 6
+        self.tabs.addTab(self.grid_excel_duplicates, "Excel Duplicates (0)")  # Index 7
+        self.tabs.addTab(self.grid_db_duplicates, "DB Duplicates (0)")  # Index 8
         right_layout.addWidget(self.tabs)
-        
+
         # Progress Bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
@@ -288,44 +317,105 @@ class MainWindow(QMainWindow):
         self.splitter.addWidget(right_panel)
         self.splitter.setSizes([300, 900])
 
-
         self.selected_files = []
-        
+
         self.match_columns = [
-            {"label": "Excel Name", "key": "excel.raw_name", "getter": lambda r: r['excel'].get('raw_name', '')},
-            {"label": "DB Name", "key": "db.fullname", "getter": lambda r: f"{r['db'].get('lastname', '')}, {r['db'].get('firstname', '')} {r['db'].get('middlename', '')}".strip()},
-            {"label": "Excel Bday", "key": "excel.birthday", "getter": lambda r: format_display_date(r['excel'].get('birthday'))},
-            {"label": "DB Bday", "key": "db.birthday", "getter": lambda r: format_display_date(r['db'].get('birthday'))},
+            {
+                "label": "Excel Name",
+                "key": "excel.raw_name",
+                "getter": lambda r: r["excel"].get("raw_name", ""),
+            },
+            {
+                "label": "DB Name",
+                "key": "db.fullname",
+                "getter": lambda r: (
+                    f"{r['db'].get('lastname', '')}, {r['db'].get('firstname', '')} {r['db'].get('middlename', '')}".strip()  # noqa: E501
+                ),
+            },
+            {
+                "label": "Excel Bday",
+                "key": "excel.birthday",
+                "getter": lambda r: format_display_date(r["excel"].get("birthday")),
+            },
+            {
+                "label": "DB Bday",
+                "key": "db.birthday",
+                "getter": lambda r: format_display_date(r["db"].get("birthday")),
+            },
             {"label": "Excel Wt", "key": "excel.weight"},
             {"label": "DB Wt", "key": "db.weight"},
             {"label": "Excel Ht", "key": "excel.height"},
             {"label": "DB Ht", "key": "db.height"},
-            {"label": "Excel Date", "key": "excel.date_collected", "getter": lambda r: format_display_date(r['excel'].get('date_collected'))},
-            {"label": "DB Date", "key": "db.date_collected", "getter": lambda r: format_display_date(r['db'].get('date_collected'))},
-            {"label": "Score", "key": "score"}
+            {
+                "label": "Excel Date",
+                "key": "excel.date_collected",
+                "getter": lambda r: format_display_date(
+                    r["excel"].get("date_collected")
+                ),
+            },
+            {
+                "label": "DB Date",
+                "key": "db.date_collected",
+                "getter": lambda r: format_display_date(r["db"].get("date_collected")),
+            },
+            {"label": "Score", "key": "score"},
         ]
-        
+
         self.name_match_columns = [
-            {"label": "Excel Name", "key": "excel.raw_name", "getter": lambda r: r['excel'].get('raw_name', '')},
-            {"label": "DB Lastname", "key": "db.lastname", "getter": lambda r: r['db'].get('lastname', '')},
-            {"label": "DB Firstname", "key": "db.firstname", "getter": lambda r: r['db'].get('firstname', '')},
-            {"label": "DB Middlename", "key": "db.middlename", "getter": lambda r: r['db'].get('middlename', '')},
-            {"label": "Excel Bday", "key": "excel.birthday", "getter": lambda r: format_display_date(r['excel'].get('birthday'))},
-            {"label": "DB Bday", "key": "db.birthday", "getter": lambda r: format_display_date(r['db'].get('birthday'))},
+            {
+                "label": "Excel Name",
+                "key": "excel.raw_name",
+                "getter": lambda r: r["excel"].get("raw_name", ""),
+            },
+            {
+                "label": "DB Lastname",
+                "key": "db.lastname",
+                "getter": lambda r: r["db"].get("lastname", ""),
+            },
+            {
+                "label": "DB Firstname",
+                "key": "db.firstname",
+                "getter": lambda r: r["db"].get("firstname", ""),
+            },
+            {
+                "label": "DB Middlename",
+                "key": "db.middlename",
+                "getter": lambda r: r["db"].get("middlename", ""),
+            },
+            {
+                "label": "Excel Bday",
+                "key": "excel.birthday",
+                "getter": lambda r: format_display_date(r["excel"].get("birthday")),
+            },
+            {
+                "label": "DB Bday",
+                "key": "db.birthday",
+                "getter": lambda r: format_display_date(r["db"].get("birthday")),
+            },
             {"label": "Excel Wt", "key": "excel.weight"},
             {"label": "DB Wt", "key": "db.weight"},
             {"label": "Excel Ht", "key": "excel.height"},
             {"label": "DB Ht", "key": "db.height"},
-            {"label": "Excel Date", "key": "excel.date_collected", "getter": lambda r: format_display_date(r['excel'].get('date_collected'))},
-            {"label": "DB Date", "key": "db.date_collected", "getter": lambda r: format_display_date(r['db'].get('date_collected'))},
-            {"label": "Score", "key": "score"}
+            {
+                "label": "Excel Date",
+                "key": "excel.date_collected",
+                "getter": lambda r: format_display_date(
+                    r["excel"].get("date_collected")
+                ),
+            },
+            {
+                "label": "DB Date",
+                "key": "db.date_collected",
+                "getter": lambda r: format_display_date(r["db"].get("date_collected")),
+            },
+            {"label": "Score", "key": "score"},
         ]
 
         self.db_duplicate_columns = [
             {"label": "Name", "key": "name"},
             {"label": "Duplicate Count", "key": "count"},
             {"label": "Birthdays", "key": "birthdays"},
-            {"label": "Sites Registered", "key": "sites"}
+            {"label": "Sites Registered", "key": "sites"},
         ]
 
         from core.logging_config import attach_ui_log_handler
@@ -353,7 +443,9 @@ class MainWindow(QMainWindow):
         attach_ui_log_handler(self.console_controller.log_message)
 
         self.scan_controller = ScanController(self)
-        self.file_explorer.files_selected.connect(self.scan_controller.on_files_selected)
+        self.file_explorer.files_selected.connect(
+            self.scan_controller.on_files_selected
+        )
         self.btn_browse.clicked.connect(self.scan_controller.on_browse_folder)
         self.btn_scan.clicked.connect(self.scan_controller.start_scan)
         self.btn_rebuild_index.clicked.connect(self.scan_controller.on_rebuild_index)
@@ -361,15 +453,25 @@ class MainWindow(QMainWindow):
         self.sync_controller = SyncController(self)
         self.grid_exact.action_triggered.connect(self.sync_controller.on_grid_action)
         self.grid_fuzzy.action_triggered.connect(self.sync_controller.on_grid_action)
-        self.grid_potential.action_triggered.connect(self.sync_controller.on_grid_action)
+        self.grid_potential.action_triggered.connect(
+            self.sync_controller.on_grid_action
+        )
         self.grid_bday.action_triggered.connect(self.sync_controller.on_bday_action)
         self.grid_name.action_triggered.connect(self.sync_controller.on_name_action)
         self.btn_bulk_sync.clicked.connect(self.sync_controller.on_bulk_sync_exact)
-        self.btn_bulk_sync_fuzzy.clicked.connect(self.sync_controller.on_bulk_sync_fuzzy)
-        self.btn_bulk_sync_potential.clicked.connect(self.sync_controller.on_bulk_sync_potential)
-        self.btn_bday_bulk_excel.clicked.connect(self.sync_controller.on_bulk_bday_use_excel)
+        self.btn_bulk_sync_fuzzy.clicked.connect(
+            self.sync_controller.on_bulk_sync_fuzzy
+        )
+        self.btn_bulk_sync_potential.clicked.connect(
+            self.sync_controller.on_bulk_sync_potential
+        )
+        self.btn_bday_bulk_excel.clicked.connect(
+            self.sync_controller.on_bulk_bday_use_excel
+        )
         self.btn_bday_bulk_db.clicked.connect(self.sync_controller.on_bulk_bday_use_db)
-        self.btn_name_bulk_excel.clicked.connect(self.sync_controller.on_bulk_name_use_excel)
+        self.btn_name_bulk_excel.clicked.connect(
+            self.sync_controller.on_bulk_name_use_excel
+        )
         self.btn_name_bulk_db.clicked.connect(self.sync_controller.on_bulk_name_use_db)
 
         self.grid_missing_db.action_triggered.connect(
@@ -389,8 +491,12 @@ class MainWindow(QMainWindow):
         self.btn_about.clicked.connect(self.navigation_controller.open_about)
         self.btn_manual.clicked.connect(self.navigation_controller.open_user_manual)
         self.btn_dashboard.clicked.connect(self.navigation_controller.open_dashboard)
-        self.btn_search_beneficiary.clicked.connect(self.navigation_controller.open_search)
-        self.btn_bulk_transfer.clicked.connect(self.navigation_controller.open_bulk_transfer)
+        self.btn_search_beneficiary.clicked.connect(
+            self.navigation_controller.open_search
+        )
+        self.btn_bulk_transfer.clicked.connect(
+            self.navigation_controller.open_bulk_transfer
+        )
         self.btn_theme_toggle.clicked.connect(self.navigation_controller.toggle_theme)
         self.btn_console_toggle.toggled.connect(self.console_controller.toggle_console)
 
@@ -401,11 +507,12 @@ class MainWindow(QMainWindow):
         self.navigation_controller.apply_action_permissions()
 
     def _audit(self, action, entity_type, entity_id=None, details=None):
-        self.audit_controller.audit(action, entity_type, entity_id=entity_id, details=details)
+        self.audit_controller.audit(
+            action, entity_type, entity_id=entity_id, details=details
+        )
 
     def log_message(self, msg):
         self.console_controller.log_message(msg)
 
     def _update_window_title(self, user_display: str):
         self.window_title_controller.update_title(user_display)
-

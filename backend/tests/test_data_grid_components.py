@@ -16,15 +16,15 @@ def test_action_widget_emits_and_shows_synced(qapp):
     w = ActionWidget(record)
 
     def on_sync(rec, widget):
-        received['rec'] = rec
-        received['widget'] = widget
+        received["rec"] = rec
+        received["widget"] = widget
 
     w.sync_clicked.connect(on_sync)
     # simulate click
     w.btn_sync.click()
 
-    assert 'rec' in received and isinstance(received['rec'], dict)
-    assert received['rec'].get('baseline_mismatch') is True
+    assert "rec" in received and isinstance(received["rec"], dict)
+    assert received["rec"].get("baseline_mismatch") is True
 
     # mark as synced should update UI only
     w.mark_as_synced()
@@ -37,16 +37,18 @@ def test_birthday_widget_actions_and_resolved(qapp):
     received = []
 
     w = BirthdayActionWidget(record)
-    w.action_clicked.connect(lambda action, rec, widget: received.append((action, rec, widget)))
+    w.action_clicked.connect(
+        lambda action, rec, widget: received.append((action, rec, widget))
+    )
 
     w.btn_excel.click()
     w.btn_db.click()
     w.btn_manual.click()
 
     assert len(received) == 3
-    assert received[0][0] == 'use_excel'
-    assert received[1][0] == 'use_db'
-    assert received[2][0] == 'manual'
+    assert received[0][0] == "use_excel"
+    assert received[1][0] == "use_db"
+    assert received[2][0] == "manual"
 
     w.mark_as_resolved()
     # after resolved, action buttons are hidden
@@ -58,14 +60,16 @@ def test_name_widget_actions_and_resolved(qapp):
     received = []
 
     w = NameActionWidget(record)
-    w.action_clicked.connect(lambda action, rec, widget: received.append((action, rec, widget)))
+    w.action_clicked.connect(
+        lambda action, rec, widget: received.append((action, rec, widget))
+    )
 
     w.btn_excel.click()
     w.btn_db.click()
     w.btn_manual.click()
 
     assert len(received) == 3
-    assert received[0][0] == 'use_excel'
+    assert received[0][0] == "use_excel"
 
     w.mark_as_resolved()
     assert not w.btn_manual.isVisible()
@@ -76,10 +80,12 @@ def test_missing_db_widget_and_resolved(qapp):
     received = []
 
     w = MissingDbActionWidget(record)
-    w.action_clicked.connect(lambda action, rec, widget: received.append((action, rec, widget)))
+    w.action_clicked.connect(
+        lambda action, rec, widget: received.append((action, rec, widget))
+    )
 
     w.btn_add.click()
-    assert received and received[0][0] == 'add_to_db'
+    assert received and received[0][0] == "add_to_db"
 
     w.mark_as_resolved()
     assert not w.btn_add.isVisible()
@@ -90,10 +96,12 @@ def test_missing_excel_widget_and_resolved(qapp):
     received = []
 
     w = MissingExcelActionWidget(record)
-    w.action_clicked.connect(lambda action, rec, widget: received.append((action, rec, widget)))
+    w.action_clicked.connect(
+        lambda action, rec, widget: received.append((action, rec, widget))
+    )
 
     w.btn_delete.click()
-    assert received and received[0][0] == 'delete_from_db'
+    assert received and received[0][0] == "delete_from_db"
 
     w.mark_as_resolved()
     assert not w.btn_delete.isVisible()
@@ -104,7 +112,9 @@ def test_manage_dup_widget_emits_manage(qapp):
     received = []
 
     w = ManageDupWidget(record)
-    w.action_clicked.connect(lambda action, rec, widget: received.append((action, rec, widget)))
+    w.action_clicked.connect(
+        lambda action, rec, widget: received.append((action, rec, widget))
+    )
 
     # find the child button and click
     btn = w.findChild(type(w.layout().itemAt(0).widget()))
@@ -112,7 +122,7 @@ def test_manage_dup_widget_emits_manage(qapp):
     btn = w.layout().itemAt(0).widget()
     btn.click()
 
-    assert received and received[0][0] == 'manage'
+    assert received and received[0][0] == "manage"
 
 
 def test_results_data_grid_action_emits(qapp):
@@ -121,7 +131,10 @@ def test_results_data_grid_action_emits(qapp):
 
     # define columns and a single record with birthday action
     columns = [{"label": "Name", "key": "excel.raw_name"}]
-    record = {"excel": {"raw_name": "Test", "birthday": "2000-01-02"}, "db": {"firstname": "T", "lastname": "S"}}
+    record = {
+        "excel": {"raw_name": "Test", "birthday": "2000-01-02"},
+        "db": {"firstname": "T", "lastname": "S"},
+    }
 
     def on_action(action, rec, widget):
         received.append((action, rec, widget))
@@ -134,7 +147,7 @@ def test_results_data_grid_action_emits(qapp):
     assert cell is not None
     cell.btn_excel.click()
 
-    assert received and received[0][0] == 'use_excel'
+    assert received and received[0][0] == "use_excel"
 
 
 if __name__ == "__main__":

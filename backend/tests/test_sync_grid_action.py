@@ -62,7 +62,10 @@ def test_handle_grid_action_success(monkeypatch):
     ctrl = SyncController(win)
     widget = DummyWidget()
 
-    record = {"excel": {"weight": 10, "height": 80, "birthday": "2000-01-02"}, "db": {"beneficiary_id": 5, "lastname": "X", "firstname": "Y"}}
+    record = {
+        "excel": {"weight": 10, "height": 80, "birthday": "2000-01-02"},
+        "db": {"beneficiary_id": 5, "lastname": "X", "firstname": "Y"},
+    }
 
     ctrl.handle_grid_action("Sync", record, widget)
 
