@@ -1,24 +1,42 @@
-import os
-import sys
-from pathlib import Path
+"""Integration smoke tests for MainWindow refactor wiring."""
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT_DIR))
+from __future__ import annotations
+
+import inspect
+
+from PySide6.QtWidgets import QApplication
+
+from ui.main_window import MainWindow
+
+EXPECTED_CONTROLLERS = (
+    "layout_controller",
+    "audit_controller",
+    "console_controller",
+    "window_title_controller",
+    "navigation_controller",
+    "auto_sync_controller",
+    "duplicate_controller",
+    "resolution_controller",
+    "record_action_controller",
+    "scan_controller",
+    "sync_controller",
+    "update_controller",
+)
 
 
-def test_main_window_starts_offscreen():
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+def _make_window() -> MainWindow:
+    return MainWindow(
+        current_user={
+            "firstname": "Test",
+            "lastname": "User",
+            "role": "admin",
+            "user_id": 1,
+        }
+    )
 
-    from PySide6.QtWidgets import QApplication
-    from backend.ui.main_window import MainWindow
 
-    app = QApplication.instance() or QApplication([])
-    window = MainWindow(current_user={
-        "firstname": "Test",
-        "lastname": "User",
-        "role": "admin",
-        "user_id": 1,
-    })
+def test_main_window_starts_offscreen(qapp):
+    window = _make_window()
 
     assert window is not None
     assert "HAPAG Form 5A Comparator" in window.windowTitle()
@@ -26,30 +44,45 @@ def test_main_window_starts_offscreen():
     window.close()
 
 
-def test_main_window_layout_and_update_controller_wiring():
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+def test_main_window_controllers_and_wiring(qapp):
+    window = _make_window()
 
-    from PySide6.QtWidgets import QApplication
-    from backend.ui.main_window import MainWindow
+    for name in EXPECTED_CONTROLLERS:
+        assert hasattr(window, name), f"Missing controller: {name}"
+        assert getattr(window, name) is not None
 
-    app = QApplication.instance() or QApplication([])
-    window = MainWindow(current_user={
-        "firstname": "Test",
-        "lastname": "User",
-        "role": "admin",
-        "user_id": 1,
-    })
-
-    assert hasattr(window, "layout_controller")
-    assert hasattr(window, "record_action_controller")
-    assert hasattr(window, "duplicate_controller")
     assert window.btn_scan is not None
     assert window.btn_settings is not None
     assert window.tabs is not None
     assert window.grid_exact is not None
     assert window.grid_name is not None
 
-    # Background auto-update should not start in offscreen mode.
+    # Background update check is skipped in tests (HAPAG_SKIP_BACKGROUND_UPDATE).
     assert window.update_controller._bg_thread is None
+
+    window.close()
+
+
+def test_scan_and_resolution_controllers_are_wired(qapp):
+    window = _make_window()
+
+    assert window.scan_controller is not None
+    assert callable(window.scan_controller.on_browse_folder)
+    assert callable(window.scan_controller.start_scan)
+    assert window.resolution_controller is not None
+    assert callable(window.resolution_controller.on_missing_db_action)
+    assert callable(window.resolution_controller.on_missing_excel_action)
+
+    window.close()
+
+
+def test_main_window_delegates_audit_and_log(qapp):
+    window = _make_window()
+
+    assert callable(window._audit)
+    assert callable(window.log_message)
+    assert inspect.ismethod(window._update_window_title) or callable(
+        window._update_window_title
+    )
 
     window.close()

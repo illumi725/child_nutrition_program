@@ -129,28 +129,59 @@ class MockMainWindow:
     def log_message(self, msg):
         self.log_messages.append(msg)
 
-# Monkeypatch ui.workers.ScanWorker
-import types
-import sys
-# Inject a fake ui.workers module into sys.modules so the controller will import our FakeScanWorker
-workers_mod = types.ModuleType('ui.workers')
-workers_mod.ScanWorker = FakeScanWorker
-sys.modules['ui.workers'] = workers_mod
+# Optional PySide6 stubs only when run as a script (not during pytest collection).
+if __name__ == "__main__" and "PySide6.QtWidgets" not in sys.modules:
+    qt_widgets = types.ModuleType('PySide6.QtWidgets')
+    class QApplication:
+        _instance = None
+        def __init__(self, *args, **kwargs):
+            QApplication._instance = self
+        @staticmethod
+        def instance():
+            return QApplication._instance
+    class QMessageBox:
+        Information = 0
+        def __init__(self, *args, **kwargs):
+            pass
+        def setWindowTitle(self, title):
+            pass
+        def setText(self, text):
+            pass
+        def setIcon(self, icon):
+            pass
+        def addButton(self, text, role=None):
+            return None
+        def exec(self):
+            return None
+        def clickedButton(self):
+            return None
+    qt_widgets.QApplication = QApplication
+    qt_widgets.QMessageBox = QMessageBox
+    pyside6_mod = types.ModuleType('PySide6')
+    pyside6_mod.QtWidgets = qt_widgets
+    sys.modules['PySide6'] = pyside6_mod
+    sys.modules['PySide6.QtWidgets'] = qt_widgets
 
-# Monkeypatch auth guard to always allow bulk (create minimal module if missing)
-auth_mod = types.ModuleType('ui.auth_guard')
-auth_mod.user_has_permission = lambda user, p: True
-auth_mod.require_permission = lambda parent, user, p: True
-sys.modules['ui.auth_guard'] = auth_mod
+def _run_smoke():
+    workers_mod = types.ModuleType("ui.workers")
+    workers_mod.ScanWorker = FakeScanWorker
+    sys.modules["ui.workers"] = workers_mod
 
-# Run the controller
-from ui.controllers.scan_controller import ScanController
+    auth_mod = types.ModuleType("ui.auth_guard")
+    auth_mod.user_has_permission = lambda user, p: True
+    auth_mod.require_permission = lambda parent, user, p: True
+    sys.modules["ui.auth_guard"] = auth_mod
 
-mwin = MockMainWindow()
-controller = ScanController(mwin)
-controller.start_scan()
+    from ui.controllers.scan_controller import ScanController
 
-# Basic assertions (raise AssertionError if wiring broke)
-assert mwin.progress_bar.visible == False or isinstance(mwin.progress_bar.visible, bool)
-assert 'Scan started.' in mwin.log_messages[0] or True
-print('SMOKE TEST: ScanController.start_scan executed without exceptions')
+    mwin = MockMainWindow()
+    controller = ScanController(mwin)
+    controller.start_scan()
+
+    assert isinstance(mwin.progress_bar.visible, bool)
+    assert mwin.log_messages
+
+
+if __name__ == "__main__":
+    _run_smoke()
+    print("SMOKE TEST: ScanController.start_scan executed without exceptions")

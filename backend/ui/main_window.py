@@ -1,11 +1,20 @@
 import os
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                               QSplitter, QTabWidget, QPushButton, QLabel, QProgressBar,
-                               QApplication, QPlainTextEdit, QSizePolicy, QDialog)
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QSplitter,
+    QTabWidget,
+    QPushButton,
+    QLabel,
+    QProgressBar,
+    QPlainTextEdit,
+    QDialog,
+)
+from PySide6.QtCore import Qt
 from ui.components.file_explorer import FileExplorer
 from ui.components.data_grid import ResultsDataGrid
-from datetime import datetime
 
 from ui.format_utils import format_display_date
 
@@ -39,19 +48,245 @@ class MainWindow(QMainWindow):
     def __init__(self, current_user=None):
         super().__init__()
         self.current_user = current_user
-        user_display = f"{current_user['firstname']} {current_user['lastname']} ({current_user['role']})" if current_user else "Unknown User"
+
+        from ui.controllers.window_title_controller import WindowTitleController
+
+        self.window_title_controller = WindowTitleController(self)
+        user_display = (
+            f"{current_user['firstname']} {current_user['lastname']} ({current_user['role']})"
+            if current_user
+            else "Unknown User"
+        )
         self._update_window_title(user_display)
         self.resize(1200, 800)
         self._auto_sync_timer = None
 
-        from ui.controllers.record_action_controller import RecordActionController
-        from ui.controllers.duplicate_controller import DuplicateController
-        from ui.controllers.layout_controller import LayoutController
+        # Central Widget & Layout
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QVBoxLayout(central_widget)
 
-        self.record_action_controller = RecordActionController(self)
-        self.duplicate_controller = DuplicateController(self)
-        self.layout_controller = LayoutController(self)
-        self.layout_controller.build()
+        # Header
+        header = QLabel("HAPAG Registration & Baseline Diagnostics")
+        header.setAlignment(Qt.AlignCenter)
+        header.setStyleSheet("""
+            font-size: 24px; 
+            font-weight: bold; 
+            margin: 10px; 
+            color: #2c3e50;
+        """)
+        main_layout.addWidget(header, 0) # stretch=0
+
+        # Splitter for Sidebar and Main Content
+        self.splitter = QSplitter(Qt.Horizontal)
+        main_layout.addWidget(self.splitter, 1) # stretch=1
+
+        # Left Sidebar (File Explorer + Actions)
+        left_panel = QWidget()
+        left_layout = QVBoxLayout(left_panel)
+        
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "HAPAG APPROVED BASELINE"))
+        if not os.path.exists(base_dir):
+            base_dir = os.path.expanduser("~")
+            
+        self.file_explorer = FileExplorer(base_dir)
+        
+        self.btn_browse = QPushButton("Browse Folder...")
+        self.btn_browse.setStyleSheet("padding: 5px; background-color: #34495e; color: white;")
+        
+        self.btn_scan = QPushButton("Scan Selected Files")
+        self.btn_scan.setEnabled(False)
+
+        self.btn_rebuild_index = QPushButton("🗂 Rebuild Inter-file Index")
+        self.btn_rebuild_index.setStyleSheet("padding: 4px; background-color: #7f8c8d; color: white; font-size: 11px;")
+        self.btn_rebuild_index.setToolTip("Delete the cached inter-file duplicate index so it is rebuilt from scratch on the next scan.")
+
+        left_layout.addWidget(QLabel("Local Directory Scanner"))
+        left_layout.addWidget(self.btn_browse)
+        left_layout.addWidget(self.file_explorer)
+        left_layout.addWidget(self.btn_scan)
+        left_layout.addWidget(self.btn_rebuild_index)
+
+
+        self.splitter.addWidget(left_panel)
+
+        # Right Panel (Results Tabs)
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        
+        right_header_layout = QHBoxLayout()
+        self.btn_settings = QPushButton("⚙ Settings")
+        self.btn_about = QPushButton("ℹ️ About")
+        self.btn_manual = QPushButton("📖 User Manual")
+        self.btn_dashboard = QPushButton("📊 Dashboard")
+        self.btn_search_beneficiary = QPushButton("🔍 Search")
+        self.btn_bulk_transfer = QPushButton("📦 Bulk Transfer")
+        
+        from core.app_settings import get_theme
+        current_theme = get_theme()
+        btn_text = "☀️ Light" if current_theme == "dark" else "🌙 Dark"
+        self.btn_theme_toggle = QPushButton(btn_text)
+        
+        right_header_layout.addStretch()
+        right_header_layout.addWidget(self.btn_theme_toggle)
+        right_header_layout.addWidget(self.btn_search_beneficiary)
+        right_header_layout.addWidget(self.btn_bulk_transfer)
+        right_header_layout.addWidget(self.btn_dashboard)
+        right_header_layout.addWidget(self.btn_manual)
+        right_header_layout.addWidget(self.btn_settings)
+        right_header_layout.addWidget(self.btn_about)
+        right_layout.addLayout(right_header_layout)
+
+        self.tabs = QTabWidget()
+        
+        # Setup Data Grids
+        self.grid_exact = ResultsDataGrid()
+        self.grid_fuzzy = ResultsDataGrid()
+        self.grid_potential = ResultsDataGrid()
+        self.grid_missing_db = ResultsDataGrid()
+        self.grid_bday = ResultsDataGrid()
+        self.grid_name = ResultsDataGrid()
+        
+        self.grid_missing_excel = ResultsDataGrid()
+        self.grid_excel_duplicates = ResultsDataGrid()
+        self.grid_db_duplicates = ResultsDataGrid()
+        
+        # Exact Matches Tab Widget with Bulk Sync Button
+        self.exact_tab_widget = QWidget()
+        exact_layout = QVBoxLayout(self.exact_tab_widget)
+        exact_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.btn_bulk_sync = QPushButton("Bulk Sync All Exact Matches")
+        self.btn_bulk_sync.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bulk_sync.setEnabled(False)
+        
+        exact_layout.addWidget(self.btn_bulk_sync)
+        exact_layout.addWidget(self.grid_exact)
+
+        self.tabs.addTab(self.exact_tab_widget, "Exact Matches (0)") # Index 0
+
+        # High Confidence Tab Widget with Bulk Sync Button
+        self.fuzzy_tab_widget = QWidget()
+        fuzzy_layout = QVBoxLayout(self.fuzzy_tab_widget)
+        fuzzy_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.btn_bulk_sync_fuzzy = QPushButton("⚡ Bulk Sync Baseline — High Confidence")
+        self.btn_bulk_sync_fuzzy.setStyleSheet("background-color: #e67e22; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bulk_sync_fuzzy.setEnabled(False)
+
+        fuzzy_layout.addWidget(self.btn_bulk_sync_fuzzy)
+        fuzzy_layout.addWidget(self.grid_fuzzy)
+
+        self.tabs.addTab(self.fuzzy_tab_widget, "High Confidence (0)") # Index 1
+
+        # Review Required Tab Widget with Bulk Sync Button
+        self.potential_tab_widget = QWidget()
+        potential_layout = QVBoxLayout(self.potential_tab_widget)
+        potential_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.btn_bulk_sync_potential = QPushButton("⚡ Bulk Sync Baseline — Review Required")
+        self.btn_bulk_sync_potential.setStyleSheet("background-color: #c0392b; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bulk_sync_potential.setEnabled(False)
+
+        potential_layout.addWidget(self.btn_bulk_sync_potential)
+        potential_layout.addWidget(self.grid_potential)
+
+        self.tabs.addTab(self.potential_tab_widget, "Review Required (0)") # Index 2
+        
+        # Name Discrepancies Tab Widget
+        self.name_tab_widget = QWidget()
+        name_layout = QVBoxLayout(self.name_tab_widget)
+        name_layout.setContentsMargins(0, 0, 0, 0)
+        
+        name_btn_layout = QHBoxLayout()
+        self.btn_name_bulk_excel = QPushButton("Bulk Correct (Use Excel)")
+        self.btn_name_bulk_db = QPushButton("Bulk Correct (Use DB)")
+        self.btn_name_bulk_excel.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 5px;")
+        self.btn_name_bulk_db.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
+        
+        self.btn_name_bulk_excel.setEnabled(False)
+        self.btn_name_bulk_db.setEnabled(False)
+        
+        name_btn_layout.addWidget(self.btn_name_bulk_excel)
+        name_btn_layout.addWidget(self.btn_name_bulk_db)
+        
+        name_layout.addLayout(name_btn_layout)
+        name_layout.addWidget(self.grid_name)
+
+        self.tabs.addTab(self.name_tab_widget, "Name Discrepancies (0)") # Index 3
+
+        # Birthday Discrepancies Tab Widget
+        self.bday_tab_widget = QWidget()
+        bday_layout = QVBoxLayout(self.bday_tab_widget)
+        bday_layout.setContentsMargins(0, 0, 0, 0)
+        
+        bday_btn_layout = QHBoxLayout()
+        self.btn_bday_bulk_excel = QPushButton("Bulk Correct (Use Excel)")
+        self.btn_bday_bulk_db = QPushButton("Bulk Correct (Use DB)")
+        self.btn_bday_bulk_excel.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 5px;")
+        self.btn_bday_bulk_db.setStyleSheet("background-color: #8e44ad; color: white; font-weight: bold; padding: 5px;")
+        
+        self.btn_bday_bulk_excel.setEnabled(False)
+        self.btn_bday_bulk_db.setEnabled(False)
+        
+        bday_btn_layout.addWidget(self.btn_bday_bulk_excel)
+        bday_btn_layout.addWidget(self.btn_bday_bulk_db)
+        
+        bday_layout.addLayout(bday_btn_layout)
+        bday_layout.addWidget(self.grid_bday)
+
+        self.tabs.addTab(self.bday_tab_widget, "Birthday Discrepancies (0)") # Index 4
+        
+        self.tabs.addTab(self.grid_missing_db, "Missing in DB (0)") # Index 5
+        self.tabs.addTab(self.grid_missing_excel, "Missing in Excel (0)") # Index 6
+        self.tabs.addTab(self.grid_excel_duplicates, "Excel Duplicates (0)") # Index 7
+        self.tabs.addTab(self.grid_db_duplicates, "DB Duplicates (0)") # Index 8
+        right_layout.addWidget(self.tabs)
+        
+        # Progress Bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        self.lbl_status = QLabel("Ready")
+        right_layout.addWidget(self.progress_bar)
+        right_layout.addWidget(self.lbl_status)
+
+        # ── Collapsible Console ──────────────────────────────────────────────
+        console_header = QHBoxLayout()
+        self.btn_console_toggle = QPushButton("▶  Console Log")
+        self.btn_console_toggle.setCheckable(True)
+        self.btn_console_toggle.setChecked(False)
+        self.btn_console_toggle.setStyleSheet("""
+            QPushButton { background: #2c3e50; color: #ecf0f1;
+                font-size: 11px; font-weight: bold; padding: 3px 8px;
+                border: none; border-radius: 3px; text-align: left; }
+            QPushButton:hover { background: #34495e; }
+            QPushButton:checked { background: #1a252f; }
+        """)
+        btn_clear = QPushButton("Clear")
+        btn_clear.setStyleSheet("font-size: 10px; padding: 2px 6px; color: #7f8c8d;")
+        btn_clear.clicked.connect(lambda: self.console.clear())
+        console_header.addWidget(self.btn_console_toggle)
+        console_header.addStretch()
+        console_header.addWidget(btn_clear)
+
+        self.console = QPlainTextEdit()
+        self.console.setReadOnly(True)
+        self.console.setMaximumBlockCount(1000)  # keep last 1000 lines
+        self.console.setVisible(False)
+        self.console.setFixedHeight(140)
+        self.console.setStyleSheet("""
+            QPlainTextEdit {
+                background: #1e2a35; color: #a8d8a8;
+                font-family: Consolas, monospace; font-size: 11px;
+                border: none; padding: 4px;
+            }
+        """)
+
+        right_layout.addLayout(console_header)
+        right_layout.addWidget(self.console)
+
+        self.splitter.addWidget(right_panel)
+        self.splitter.setSizes([300, 900])
 
 
         self.selected_files = []
@@ -93,24 +328,42 @@ class MainWindow(QMainWindow):
             {"label": "Sites Registered", "key": "sites"}
         ]
 
-        # Start auto-sync if Local mode is active
-        self._start_auto_sync_timer()
-        
         from core.logging_config import attach_ui_log_handler
-        attach_ui_log_handler(self.log_message)
-
-        from ui.controllers.update_controller import UpdateController
-        self.update_controller = UpdateController(self)
-        self.update_controller.start_background_check()
-
-        # ScanController (R7): extracted scan logic from MainWindow
+        from ui.controllers.audit_controller import AuditController
+        from ui.controllers.auto_sync_controller import AutoSyncController
+        from ui.controllers.console_controller import ConsoleController
+        from ui.controllers.duplicate_controller import DuplicateController
+        from ui.controllers.layout_controller import LayoutController
+        from ui.controllers.navigation_controller import NavigationController
+        from ui.controllers.record_action_controller import RecordActionController
+        from ui.controllers.resolution_controller import ResolutionController
         from ui.controllers.scan_controller import ScanController
-        self.scan_controller = ScanController(self)
-        self.btn_scan.clicked.connect(self.scan_controller.start_scan)
-
         from ui.controllers.sync_controller import SyncController
+        from ui.controllers.update_controller import UpdateController
+
+        self.layout_controller = LayoutController(self)
+        self.audit_controller = AuditController(self)
+        self.console_controller = ConsoleController(self)
+        self.navigation_controller = NavigationController(self)
+        self.auto_sync_controller = AutoSyncController(self)
+        self.duplicate_controller = DuplicateController(self)
+        self.resolution_controller = ResolutionController(self)
+        self.record_action_controller = RecordActionController(self)
+
+        attach_ui_log_handler(self.console_controller.log_message)
+
+        self.scan_controller = ScanController(self)
+        self.file_explorer.files_selected.connect(self.scan_controller.on_files_selected)
+        self.btn_browse.clicked.connect(self.scan_controller.on_browse_folder)
+        self.btn_scan.clicked.connect(self.scan_controller.start_scan)
+        self.btn_rebuild_index.clicked.connect(self.scan_controller.on_rebuild_index)
+
         self.sync_controller = SyncController(self)
-        # wire bulk-action buttons to controller methods
+        self.grid_exact.action_triggered.connect(self.sync_controller.on_grid_action)
+        self.grid_fuzzy.action_triggered.connect(self.sync_controller.on_grid_action)
+        self.grid_potential.action_triggered.connect(self.sync_controller.on_grid_action)
+        self.grid_bday.action_triggered.connect(self.sync_controller.on_bday_action)
+        self.grid_name.action_triggered.connect(self.sync_controller.on_name_action)
         self.btn_bulk_sync.clicked.connect(self.sync_controller.on_bulk_sync_exact)
         self.btn_bulk_sync_fuzzy.clicked.connect(self.sync_controller.on_bulk_sync_fuzzy)
         self.btn_bulk_sync_potential.clicked.connect(self.sync_controller.on_bulk_sync_potential)
@@ -119,184 +372,40 @@ class MainWindow(QMainWindow):
         self.btn_name_bulk_excel.clicked.connect(self.sync_controller.on_bulk_name_use_excel)
         self.btn_name_bulk_db.clicked.connect(self.sync_controller.on_bulk_name_use_db)
 
-        self._apply_action_permissions()
-
-    def _apply_action_permissions(self):
-        """Enable toolbar and bulk actions based on the logged-in user's role."""
-        from ui.auth_guard import user_has_permission
-
-        user = self.current_user
-        can_bulk = user_has_permission(user, "bulk_sync")
-        can_transfer = user_has_permission(user, "bulk_transfer")
-
-        self.btn_bulk_transfer.setEnabled(can_transfer)
-        self.btn_bulk_transfer.setToolTip(
-            "" if can_transfer else "Your role cannot use bulk transfer."
+        self.grid_missing_db.action_triggered.connect(
+            self.resolution_controller.on_missing_db_action
+        )
+        self.grid_missing_excel.action_triggered.connect(
+            self.resolution_controller.on_missing_excel_action
+        )
+        self.grid_excel_duplicates.action_triggered.connect(
+            self.duplicate_controller.on_excel_dup_action
+        )
+        self.grid_db_duplicates.action_triggered.connect(
+            self.duplicate_controller.on_db_dup_action
         )
 
-        for btn in (
-            getattr(self, "btn_bulk_sync", None),
-            getattr(self, "btn_bulk_sync_fuzzy", None),
-            getattr(self, "btn_bulk_sync_potential", None),
-        ):
-            if btn and not can_bulk:
-                btn.setEnabled(False)
-                btn.setToolTip("Your role cannot run bulk baseline sync.")
+        self.btn_settings.clicked.connect(self.navigation_controller.open_settings)
+        self.btn_about.clicked.connect(self.navigation_controller.open_about)
+        self.btn_manual.clicked.connect(self.navigation_controller.open_user_manual)
+        self.btn_dashboard.clicked.connect(self.navigation_controller.open_dashboard)
+        self.btn_search_beneficiary.clicked.connect(self.navigation_controller.open_search)
+        self.btn_bulk_transfer.clicked.connect(self.navigation_controller.open_bulk_transfer)
+        self.btn_theme_toggle.clicked.connect(self.navigation_controller.toggle_theme)
+        self.btn_console_toggle.toggled.connect(self.console_controller.toggle_console)
+
+        self.update_controller = UpdateController(self)
+        self.update_controller.start_background_check()
+
+        self.auto_sync_controller.start_auto_sync_timer()
+        self.navigation_controller.apply_action_permissions()
 
     def _audit(self, action, entity_type, entity_id=None, details=None):
-        from core.audit import audit_user_id, log_action
-        log_action(
-            audit_user_id(self.current_user),
-            action,
-            entity_type,
-            entity_id=entity_id,
-            details=details,
-        )
-
-    def on_files_selected(self, files):
-        self.selected_files = files
-        self.btn_scan.setEnabled(len(files) > 0)
-        self.btn_scan.setText(f"Scan Selected Files ({len(files)})")
-        
-    def on_browse_folder(self):
-        from PySide6.QtWidgets import QFileDialog
-        dir_path = QFileDialog.getExistingDirectory(self, "Select Directory containing Excel Files", self.file_explorer.model.rootPath())
-        if dir_path:
-            self.file_explorer.set_root_path(dir_path)
-
-    def on_rebuild_index(self):
-        from PySide6.QtWidgets import QMessageBox
-        import sys
-        if getattr(sys, 'frozen', False):
-            base = os.path.dirname(sys.executable)
-        else:
-            base = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        cache_path = os.path.join(base, "interfile_index_cache.json")
-        if os.path.exists(cache_path):
-            os.remove(cache_path)
-            self.log_message("🗂 Inter-file index cache cleared. It will be rebuilt on the next scan.")
-            QMessageBox.information(self, "Index Cleared", "The inter-file duplicate index cache has been cleared.\nIt will be rebuilt automatically on the next scan.")
-        else:
-            QMessageBox.information(self, "No Cache", "No cached index found. The index will be built fresh on the next scan.")
-
-
-
-    def open_dashboard(self):
-        from ui.dashboard_window import DashboardWindow
-        dash = DashboardWindow(self.file_explorer.model.rootPath(), self)
-        dash.exec()
-
-    def open_search(self):
-        from ui.search_window import SearchBeneficiaryWindow
-        search = SearchBeneficiaryWindow(self)
-        search.exec()
-
-    def open_bulk_transfer(self):
-        from ui.bulk_transfer_window import BulkTransferWindow
-        from ui.auth_guard import require_permission
-        if not require_permission(self, self.current_user, "bulk_transfer"):
-            return
-        transfer = BulkTransferWindow(self)
-        transfer.exec()
-
-    def toggle_theme(self):
-        from core.app_settings import get_theme, set_theme
-        from ui.theme import apply_theme
-        from PySide6.QtWidgets import QApplication
-        
-        current_theme = get_theme()
-        new_theme = "dark" if current_theme == "light" else "light"
-        set_theme(new_theme)
-        
-        btn_text = "☀️ Light" if new_theme == "dark" else "🌙 Dark"
-        self.btn_theme_toggle.setText(btn_text)
-        
-        apply_theme(QApplication.instance(), new_theme)
-
-    def open_settings(self):
-        from ui.components.settings_dialog import SettingsDialog
-        dlg = SettingsDialog(self)
-        dlg.exec()
-        # Refresh title after settings change (mode may have changed)
-        user_display = (f"{self.current_user['firstname']} {self.current_user['lastname']} "
-                        f"({self.current_user['role']})") if self.current_user else "Unknown User"
-        self._update_window_title(user_display)
-        self._start_auto_sync_timer()
-
-    def open_about(self):
-        from PySide6.QtWidgets import QMessageBox
-        import datetime
-        try:
-            from core.version import APP_VERSION, APP_RELEASE_DATE
-        except ImportError:
-            from core.version import APP_VERSION
-            APP_RELEASE_DATE = datetime.date.today().strftime("%B %d, %Y")
-        
-        current_year = datetime.date.today().year
-        
-        about_text = (
-            "HAPAG Form 5A Comparator\n\n"
-            f"Version: {APP_VERSION}\n"
-            f"Update Date: {APP_RELEASE_DATE}\n\n"
-            "Developed By: Jhay [06194]\n"
-            "Agile Transformation Office\n\n"
-            "ASA Philippines Foundation, Inc. (A Microfinance NGO)\n\n"
-            f"All Rights Reserved. © {current_year}"
-        )
-        
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("About HAPAG Form 5A Comparator")
-        msg_box.setText(about_text)
-        msg_box.setIcon(QMessageBox.Information)
-        
-        # Add custom Check for Updates button
-        btn_check = msg_box.addButton("Check for Updates", QMessageBox.ActionRole)
-        msg_box.addButton(QMessageBox.Close)
-        
-        msg_box.exec()
-        
-        if msg_box.clickedButton() == btn_check:
-            self.update_controller.check_for_updates_manual()
-
-    def open_user_manual(self):
-        dlg = UserManualBrowser(self)
-        dlg.exec()
-
-    def _update_window_title(self, user_display: str):
-        from core.app_settings import get_mode
-        mode_tag = "☁ CLOUD" if get_mode() == 'cloud' else "💾 LOCAL"
-        self.setWindowTitle(f"HAPAG Form 5A Comparator [{mode_tag}] — {user_display}")
-
-    def _start_auto_sync_timer(self):
-        from core.app_settings import get_mode, get_auto_sync_enabled, get_auto_sync_interval
-        if self._auto_sync_timer:
-            self._auto_sync_timer.stop()
-            self._auto_sync_timer = None
-
-        if get_mode() == 'local' and get_auto_sync_enabled():
-            interval_ms = get_auto_sync_interval() * 60 * 1000
-            self._auto_sync_timer = QTimer(self)
-            self._auto_sync_timer.setInterval(interval_ms)
-            self._auto_sync_timer.timeout.connect(self._run_background_sync)
-            self._auto_sync_timer.start()
-            self.log_message(f"🔄 Auto-sync enabled every {get_auto_sync_interval()} min.")
-
-    def _run_background_sync(self):
-        from core.sync_engine import SyncWorker
-        self.log_message("🔄 Auto-sync started...")
-        worker = SyncWorker(mode=SyncWorker.MODE_SYNC, parent=self)
-        worker.finished.connect(lambda ok, msg: self.log_message(f"🔄 Auto-sync: {msg}"))
-        worker.error.connect(lambda e: self.log_message(f"⚠ Auto-sync error: {e}"))
-        worker.start()
-
-    def _toggle_console(self, checked):
-        self.console.setVisible(checked)
-        self.btn_console_toggle.setText(("▼" if checked else "▶") + "  Console Log")
+        self.audit_controller.audit(action, entity_type, entity_id=entity_id, details=details)
 
     def log_message(self, msg):
-        import datetime
-        ts = datetime.datetime.now().strftime("%H:%M:%S")
-        self.console.appendPlainText(f"[{ts}]  {msg}")
+        self.console_controller.log_message(msg)
 
-
+    def _update_window_title(self, user_display: str):
+        self.window_title_controller.update_title(user_display)
 

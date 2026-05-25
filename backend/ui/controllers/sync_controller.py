@@ -1,11 +1,11 @@
-"""Bulk sync and bulk-correction controller extracted from MainWindow (R7).
-
-Provides methods for bulk baseline sync, bulk birthday/name corrections.
-"""
+"""Baseline sync and discrepancy correction actions (R7)."""
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QApplication, QMessageBox
+import re
+from typing import Any
+
+from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog
 
 
 class SyncController:
@@ -260,3 +260,192 @@ class SyncController:
         self._win.btn_name_bulk_db.setText("Bulk Correct (Use DB)")
         self._win.grid_name.set_data(self._win.name_discrepancies, self._win.name_match_columns, action_label="NameActions")
         QMessageBox.information(self._win, "Complete", f"Successfully applied DB names to {success_count} Excel records.")
+
+    def on_grid_action(self, action_name, record, action_widget):
+        self._handle_grid_action(action_name, record, action_widget)
+
+    def _handle_grid_action(self, action_name: str, record: dict, action_widget: Any):
+        from core.database import sync_baseline
+        from PySide6.QtWidgets import QMessageBox
+        from ui.auth_guard import require_permission
+
+        if action_name not in ["Sync", "Resolve"]:
+            return
+
+        if not require_permission(self._win, self._win.current_user, "sync_baseline"):
+            return
+
+        ex = record.get("excel", {})
+        db = record.get("db", {})
+
+        weight = ex.get("weight") or db.get("weight")
+        height = ex.get("height") or db.get("height")
+        date_collected = ex.get("date_collected") or db.get("date_collected")
+        birthday = ex.get("birthday") or db.get("birthday")
+
+        if not weight or not height:
+            QMessageBox.warning(self._win, "Missing Data", "Cannot sync: weight or height is missing.")
+            return
+
+        success = sync_baseline(
+            beneficiary_id=db.get("beneficiary_id"),
+            weight=weight,
+            height=height,
+            date_collected=date_collected,
+            birthday=birthday,
+        )
+
+        if success:
+            self._win._audit(
+                "sync_baseline",
+                "beneficiary",
+                db.get("beneficiary_id"),
+                {"source": "grid_action"},
+            )
+            if hasattr(action_widget, "mark_as_synced"):
+                action_widget.mark_as_synced()
+            QMessageBox.information(
+                self._win,
+                "Success",
+                f"Successfully synced baseline data for {db.get('lastname', '') + ', ' + db.get('firstname', '')}.",
+            )
+        else:
+            QMessageBox.warning(self._win, "Error", "Failed to sync baseline data. Check console for details.")
+
+    def on_bday_action(self, action_name, record, action_widget):
+        from core.database import update_birthday_db
+        from core.excel_updater import update_excel_birthday
+        from ui.auth_guard import require_permission
+
+        if not require_permission(self._win, self._win.current_user, "edit_discrepancy"):
+            return
+
+        ex = record["excel"]
+        db = record["db"]
+
+        if action_name == "use_excel":
+            success = update_birthday_db(db["beneficiary_id"], ex["birthday"])
+            if success:
+                record["baseline_mismatch"] = False
+                action_widget.mark_as_resolved()
+                QMessageBox.information(
+                    self._win, "Success", f"Updated DB birthday to {ex['birthday']}."
+                )
+            else:
+                QMessageBox.warning(self._win, "Error", "Failed to update DB birthday.")
+
+        elif action_name == "use_db":
+            success = update_excel_birthday(
+                ex["file_path"], ex["row_number"], db["birthday"]
+            )
+            if success:
+                record["baseline_mismatch"] = False
+                action_widget.mark_as_resolved()
+                QMessageBox.information(
+                    self._win, "Success", f"Updated Excel file birthday to {db['birthday']}."
+                )
+            else:
+                QMessageBox.warning(self._win, "Error", "Failed to update Excel file birthday.")
+
+        elif action_name == "manual":
+            date_str, ok = QInputDialog.getText(
+                self._win,
+                "Manual Correction",
+                f"Enter correct birthday for {db['lastname']} (YYYY-MM-DD):",
+                text=ex["birthday"] or db["birthday"],
+            )
+            if ok and date_str:
+                if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_str):
+                    QMessageBox.warning(
+                        self._win, "Error", "Invalid date format. Please use YYYY-MM-DD."
+                    )
+                    return
+                success_db = update_birthday_db(db["beneficiary_id"], date_str)
+                success_ex = update_excel_birthday(
+                    ex["file_path"], ex["row_number"], date_str
+                )
+                if success_db and success_ex:
+                    record["baseline_mismatch"] = False
+                    action_widget.mark_as_resolved()
+                    QMessageBox.information(
+                        self._win, "Success", f"Updated both DB and Excel to {date_str}."
+                    )
+                else:
+                    QMessageBox.warning(
+                        self._win, "Error", "Failed to fully update. Check console for details."
+                    )
+
+    def on_name_action(self, action_name, record, action_widget):
+        from core.database import update_name_db, get_surname_dictionary
+        from core.excel_updater import update_excel_name
+        from core.parser import split_beneficiary_name
+        from ui.auth_guard import require_permission
+
+        if not require_permission(self._win, self._win.current_user, "edit_discrepancy"):
+            return
+
+        ex = record["excel"]
+        db = record["db"]
+
+        db_fullname = f"{db.get('lastname', '')}, {db.get('firstname', '')}"
+        if db.get("middlename"):
+            db_fullname += f" {db.get('middlename')}"
+        ex_fullname = ex.get("raw_name", "")
+
+        if action_name == "use_excel":
+            surname_dict = get_surname_dictionary()
+            ln, fn, mn = split_beneficiary_name(ex_fullname, surname_dict=surname_dict)
+            success = update_name_db(db["beneficiary_id"], ln, fn, mn)
+            if success:
+                record["name_mismatch"] = False
+                action_widget.mark_as_resolved()
+                QMessageBox.information(
+                    self._win, "Success", f"Updated DB name to {ex_fullname}."
+                )
+            else:
+                QMessageBox.warning(self._win, "Error", "Failed to update DB name.")
+
+        elif action_name == "use_db":
+            success = update_excel_name(ex["file_path"], ex["row_number"], db_fullname)
+            if success:
+                record["name_mismatch"] = False
+                action_widget.mark_as_resolved()
+                QMessageBox.information(
+                    self._win, "Success", f"Updated Excel file name to {db_fullname}."
+                )
+            else:
+                QMessageBox.warning(self._win, "Error", "Failed to update Excel file name.")
+
+        elif action_name == "manual":
+            name_str, ok = QInputDialog.getText(
+                self._win,
+                "Manual Correction",
+                f"Enter correct name for {db_fullname} (Format: LASTNAME, FIRSTNAME MIDDLENAME):",
+                text=ex_fullname,
+            )
+            if ok and name_str:
+                surname_dict = get_surname_dictionary()
+                ln, fn, mn = split_beneficiary_name(name_str, surname_dict=surname_dict)
+                if not ln or not fn:
+                    QMessageBox.warning(
+                        self._win,
+                        "Error",
+                        "Invalid name format. Please use 'LASTNAME, FIRSTNAME MIDDLENAME'.",
+                    )
+                    return
+                success_db = update_name_db(db["beneficiary_id"], ln, fn, mn)
+                success_ex = update_excel_name(ex["file_path"], ex["row_number"], name_str)
+                if success_db and success_ex:
+                    record["name_mismatch"] = False
+                    action_widget.mark_as_resolved()
+                    QMessageBox.information(
+                        self._win, "Success", f"Updated both DB and Excel to {name_str}."
+                    )
+                else:
+                    QMessageBox.warning(
+                        self._win, "Error", "Failed to fully update. Check console for details."
+                    )
+
+    def handle_grid_action(self, action_name, record, action_widget):
+        """Alias kept for existing tests."""
+        return self.on_grid_action(action_name, record, action_widget)

@@ -33,6 +33,17 @@ class DBDuplicateDialogController:
     def __init__(self, dialog):
         self._dlg = dialog
 
+    def load_counts(self):
+        self._dlg.lbl_status.setText("Fetching related record counts from database...")
+        self._dlg.worker = self._create_fetch_counts_worker(self._dlg.duplicate_records)
+        self._dlg.worker.finished.connect(self._dlg._populate_table)
+        self._dlg.worker.error.connect(lambda e: self._dlg.lbl_status.setText(f"Error: {e}"))
+        self._dlg.worker.start()
+
+    def _create_fetch_counts_worker(self, records):
+        from ui.components.db_duplicate_dialog import FetchCountsWorker
+        return FetchCountsWorker(records)
+
     def apply_delete_permission(self):
         from ui.auth_guard import user_has_permission
 

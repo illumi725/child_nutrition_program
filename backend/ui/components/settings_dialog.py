@@ -13,9 +13,6 @@ class SettingsDialog(QDialog):
         self.setMinimumWidth(480)
         self.setModal(True)
         self._sync_worker = None
-        # controller to handle sync logic
-        from ui.controllers.settings_controller import SettingsController
-        self._controller = SettingsController(self)
         self._setup_ui()
         self._load_settings()
 
@@ -164,27 +161,23 @@ class SettingsDialog(QDialog):
             self._start_sync_worker(mode='full')
 
     def _start_sync_worker(self, mode: str):
-        # delegate to controller which encapsulates the sync worker
-        try:
-            self._controller.start_sync(mode)
-        except Exception:
-            # fall back to in-dialog behavior on error
-            from core.sync_engine import SyncWorker
-            if self._sync_worker and self._sync_worker.isRunning():
-                return
-            self.progress_bar.setVisible(True)
-            self.progress_bar.setValue(0)
-            self.lbl_progress_msg.setVisible(True)
-            self.btn_sync_now.setEnabled(False)
-            self.btn_full_replicate.setEnabled(False)
-            self.btn_save.setEnabled(False)
+        from core.sync_engine import SyncWorker
+        if self._sync_worker and self._sync_worker.isRunning():
+            return
 
-            worker_mode = SyncWorker.MODE_FULL if mode == 'full' else SyncWorker.MODE_SYNC
-            self._sync_worker = SyncWorker(mode=worker_mode, parent=self)
-            self._sync_worker.progress.connect(self._on_progress)
-            self._sync_worker.finished.connect(self._on_finished)
-            self._sync_worker.error.connect(self._on_error)
-            self._sync_worker.start()
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
+        self.lbl_progress_msg.setVisible(True)
+        self.btn_sync_now.setEnabled(False)
+        self.btn_full_replicate.setEnabled(False)
+        self.btn_save.setEnabled(False)
+
+        worker_mode = SyncWorker.MODE_FULL if mode == 'full' else SyncWorker.MODE_SYNC
+        self._sync_worker = SyncWorker(mode=worker_mode, parent=self)
+        self._sync_worker.progress.connect(self._on_progress)
+        self._sync_worker.finished.connect(self._on_finished)
+        self._sync_worker.error.connect(self._on_error)
+        self._sync_worker.start()
 
     def _on_progress(self, pct: int, msg: str):
         self.progress_bar.setValue(pct)

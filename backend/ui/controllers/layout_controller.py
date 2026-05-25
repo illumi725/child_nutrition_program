@@ -61,13 +61,13 @@ class LayoutController:
             base_dir = os.path.expanduser("~")
 
         self._win.file_explorer = FileExplorer(base_dir)
-        self._win.file_explorer.files_selected.connect(self._win.on_files_selected)
+        self._win.file_explorer.files_selected.connect(self._win.file_explorer_controller.on_files_selected)
 
         self._win.btn_browse = QPushButton("Browse Folder...")
         self._win.btn_browse.setStyleSheet(
             "padding: 5px; background-color: #34495e; color: white;"
         )
-        self._win.btn_browse.clicked.connect(self._win.on_browse_folder)
+        self._win.btn_browse.clicked.connect(self._win.file_explorer_controller.on_browse_folder)
 
         self._win.btn_scan = QPushButton("Scan Selected Files")
         self._win.btn_scan.setEnabled(False)
@@ -79,7 +79,7 @@ class LayoutController:
         self._win.btn_rebuild_index.setToolTip(
             "Delete the cached inter-file duplicate index so it is rebuilt from scratch on the next scan."
         )
-        self._win.btn_rebuild_index.clicked.connect(self._win.on_rebuild_index)
+        self._win.btn_rebuild_index.clicked.connect(self._win.file_explorer_controller.on_rebuild_index)
 
         left_layout.addWidget(QLabel("Local Directory Scanner"))
         left_layout.addWidget(self._win.btn_browse)
@@ -269,7 +269,7 @@ class LayoutController:
             QPushButton:checked { background: #1a252f; }
             """
         )
-        self._win.btn_console_toggle.toggled.connect(self._win._toggle_console)
+        self._win.btn_console_toggle.toggled.connect(self._win.console_controller.toggle_console)
 
         btn_clear = QPushButton("Clear")
         btn_clear.setStyleSheet("font-size: 10px; padding: 2px 6px; color: #7f8c8d;")

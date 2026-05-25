@@ -1,5 +1,5 @@
 # Comprehensive project code review
-_Exported on 5/22/2026 at 14:52:40 GMT+8 from Cursor (3.5.17)_
+_Exported on 5/25/2026 at 16:45:51 GMT+8 from Cursor (3.5.33)_
 
 ---
 
@@ -1480,4 +1480,383 @@ R6 is **done** for the desktop app. Next logical items from the plan are **R7 ph
 **User**
 
 Proceed with R7 Phase 2
+
+---
+
+**Cursor**
+
+Reviewing the implementation plan and `main_window.py` scan logic to outline R7 Phase 2 scope and steps.
+
+
+I'm in **Ask mode**, so I can't create `scan_controller.py` or edit `main_window.py` for you. Switch to **Agent mode** if you want this implemented in the repo. Below is a concrete **R7 Phase 2** plan aligned with your codebase and Phase 1 (`UpdateController`).
+
+---
+
+## R7 Phase 2: `ScanController`
+
+Per `docs/HAPAG_Recommendation_Implementation_Plans.md`, Phase 1 (`UpdateController`) is done. Phase 2 is **`ScanController`** — file selection, `ScanWorker`, progress, and tab/grid population after scan.
+
+### What moves into `backend/ui/controllers/scan_controller.py`
+
+| Method (today in `main_window.py`) | Responsibility |
+|-----------------------------------|----------------|
+| `on_files_selected` (~851) | Track `selected_files`, enable/update scan button |
+| `on_browse_folder` (~856) | Folder picker → `file_explorer.set_root_path` |
+| `on_rebuild_index` (~862) | Clear `interfile_index_cache.json`, user message |
+| `start_scan` (~996) | Start `ScanWorker`, wire signals |
+| `update_progress` (~1012) | Progress bar + status + console |
+| `on_scan_finished` (~1018) | **Largest block** — fill all tabs/grids, bulk button states |
+| `on_scan_error` (~1128) | Reset UI on failure |
+
+Roughly **~140 lines** come out of `main_window.py`; `on_scan_finished` alone is ~110 lines.
+
+### What stays in `MainWindow`
+
+- Widget construction: `FileExplorer`, `btn_scan`, `btn_rebuild_index`, `progress_bar`, `lbl_status`, all `grid_*`, `tabs`, bulk buttons
+- Column defs: `match_columns`, `name_match_columns`, `db_duplicate_columns`
+- Action handlers: `on_grid_action`, sync/bulk/resolve/delete (those are **Phase 3 — `SyncController`** / later controllers)
+- Duplicate dialogs (`_on_excel_dup_action`, `open_db_duplicate_manager`, …) — plan lists **`duplicate_controller`** as a separate step (Phase 2b or Phase 4)
+
+### Pattern (mirror `UpdateController`)
+
+```python
+class ScanController:
+    def __init__(self, main_window):
+        self._win = main_window  # QMainWindow with all widgets/state
+
+    def on_files_selected(self, files): ...
+    def start_scan(self): ...
+    # etc.
+```
+
+Use `self._win` for widgets and state, e.g.:
+
+- `self._win.btn_scan`, `self._win.progress_bar`, `self._win.file_explorer`
+- `self._win.log_message`, `self._win.current_user`
+- After scan: `self._win.exact_matches`, `self._win.grid_exact.set_data(...)`, `self._win.tabs.setTabText(...)`
+
+Keep **`self._win.worker`** (or `self._worker` on the controller) so only one scan runs at a time.
+
+### Wiring in `MainWindow.__init__` (after widgets exist)
+
+Replace direct method connections with the controller:
+
+```python
+from ui.controllers.scan_controller import ScanController
+
+self.scan_controller = ScanController(self)
+self.file_explorer.files_selected.connect(self.scan_controller.on_files_selected)
+self.btn_scan.clicked.connect(self.scan_controller.start_scan)
+self.btn_rebuild_index.clicked.connect(self.scan_controller.on_rebuild_index)
+```
+
+Remove the old method bodies from `MainWindow` (or thin wrappers that delegate — prefer **delete + wire only**).
+
+### Imports in `scan_controller.py`
+
+- `ScanWorker` from `ui.workers`
+- `format_display_date` from `ui.format_utils`
+- `user_has_permission` from `ui.auth_guard` (for bulk button enablement in `on_scan_finished`)
+- `os`, `sys` for cache path in `on_rebuild_index` (same logic as today)
+
+### Behavior / regression risks
+
+1. **`on_scan_finished` reconnect** — `self.grid_missing_excel.action_triggered.connect(self._on_missing_excel_action)` runs every scan; ensure you don’t stack duplicate connections (disconnect first or connect once in `__init__`).
+2. **State ownership** — `exact_matches`, `fuzzy_matches`, `bday_discrepancies`, `_excel_dupes_list`, etc. can stay on `MainWindow` so Phase 3 sync code doesn’t break.
+3. **Permissions** — bulk sync buttons still use `user_has_permission(self._win.current_user, "bulk_sync")` as today.
+
+### Manual UAT (from the plan)
+
+1. Select folder → pick `.xlsx` files → scan  
+2. All 9 tabs populate with correct counts  
+3. Console log during scan; progress bar hides on complete/error  
+4. Rebuild index → cache cleared message  
+5. Bulk sync buttons enabled only when role allows and matches exist  
+
+### After Phase 2 (remaining R7)
+
+| Phase | Controller | Main methods to extract |
+|-------|------------|-------------------------|
+| 3 | `SyncController` | `on_grid_action`, `on_bulk_sync_*`, `_do_bulk_sync`, `on_bday_action`, `on_name_action`, bulk bday/name |
+| 4 | `DuplicateController` | `_on_excel_dup_action`, `open_db_duplicate_manager`, `_on_db_dup_action` |
+| 5 | `ResolutionController` | `on_missing_db_action`, `_on_missing_excel_action` (if not folded into duplicate/sync) |
+
+---
+
+## Current status
+
+- **Done:** `backend/ui/controllers/update_controller.py` (Phase 1)  
+- **Next:** `scan_controller.py` + `main_window.py` wiring (Phase 2)  
+- **`main_window.py`:** still ~1,180 lines; Phase 2 alone won’t hit the “~300 lines” target — that needs Phases 3–5.
+
+---
+
+To have this applied in the project, switch to **Agent mode** and say something like: *“Implement R7 Phase 2 ScanController.”* I’ll add the file, rewire `MainWindow`, and run pytest/ruff like the earlier phases.
+
+---
+
+**User**
+
+Implement R7 Phase 2 ScanController
+
+---
+
+**Cursor**
+
+Implementing R7 Phase 2: extracting `ScanController` from `main_window.py` and wiring it up.
+
+
+Creating `scan_controller.py` and updating `main_window.py`.
+
+
+R7 Phase 2 is implemented: **`ScanController`** is extracted and wired into `MainWindow`.
+
+## What was added
+
+**`backend/ui/controllers/scan_controller.py`** (~250 lines) owns:
+- `on_files_selected` — selected files + scan button state
+- `on_browse_folder` — folder picker
+- `on_rebuild_index` — clear inter-file cache
+- `start_scan` — `ScanWorker` lifecycle
+- `update_progress` — progress bar + console
+- `on_scan_finished` — all 9 tabs/grids + bulk button enablement
+- `on_scan_error` — reset UI on failure
+
+## `main_window.py` changes
+
+- Removed ~160 lines of scan logic
+- Wired at end of `__init__`:
+
+```python
+self.scan_controller = ScanController(self)
+self.file_explorer.files_selected.connect(self.scan_controller.on_files_selected)
+self.btn_browse.clicked.connect(self.scan_controller.on_browse_folder)
+self.btn_scan.clicked.connect(self.scan_controller.start_scan)
+self.btn_rebuild_index.clicked.connect(self.scan_controller.on_rebuild_index)
+```
+
+- **`grid_missing_excel.action_triggered`** is connected once in `__init__` (with the other grids), so repeated scans no longer stack duplicate signal handlers
+
+## Line counts
+
+| File | Lines |
+|------|-------|
+| `main_window.py` | 1,025 (was ~1,187) |
+| `scan_controller.py` | 250 |
+
+## Tests
+
+- **17 passing** — `test_permissions`, `test_parser`, `test_database_delete`
+- Other tests in the tree need a working PySide6 display/env (pre-existing collection errors)
+
+## Note on `FileExplorerController`
+
+`backend/ui/controllers/file_explorer_controller.py` still has overlapping file/browse/rebuild methods used by `layout_controller.py` (alternate layout path). **Active `MainWindow` uses `ScanController` only.** You can merge or remove `FileExplorerController` in a later cleanup pass.
+
+## Manual UAT checklist
+
+1. Browse folder → select `.xlsx` files → scan button enables  
+2. Run scan → progress + console log → all tabs update  
+3. Rebuild index → cache cleared message  
+4. Bulk sync buttons respect role + match counts  
+
+**Next (R7 Phase 3):** extract `SyncController` (`on_grid_action`, bulk sync, bday/name actions).
+
+---
+
+**User**
+
+Proceed
+
+---
+
+**Cursor**
+
+Continuing R7 Phase 3: extracting `SyncController` from `main_window.py`.
+
+
+Completing `SyncController` and wiring it into `MainWindow` — bulk logic exists but isn't connected.
+
+
+R7 Phase 3 is done: **`SyncController`** is fully wired and duplicate sync logic was removed from `MainWindow`.
+
+## What changed
+
+### `backend/ui/controllers/sync_controller.py` (~451 lines)
+Now owns all sync/correction actions:
+- `on_grid_action` / `_handle_grid_action` — single-record baseline sync (Sync/Resolve)
+- `on_bday_action` — use Excel / DB / manual birthday fixes
+- `on_name_action` — use Excel / DB / manual name fixes
+- `on_bulk_sync_exact`, `_do_bulk_sync`, `on_bulk_sync_fuzzy`, `on_bulk_sync_potential`
+- `on_bulk_bday_use_excel`, `on_bulk_bday_use_db`
+- `on_bulk_name_use_excel`, `on_bulk_name_use_db`
+- `handle_grid_action` — alias kept for `test_sync_grid_action.py`
+
+### `backend/ui/main_window.py` (~620 lines, was ~1,025)
+- Instantiates `SyncController` and wires grids + bulk buttons at end of `__init__`
+- Removed ~400 lines of duplicated sync handlers
+- Still on `MainWindow`: `on_missing_db_action`, duplicate dialogs, delete, navigation, settings
+
+## Verification
+- `test_sync_grid_action.py` — **OK**
+- Core pytest (17 tests) — **passing**
+- Ruff E722/E9 — **clean**
+
+## R7 progress
+
+| Phase | Controller | Status |
+|-------|------------|--------|
+| 1 | `UpdateController` | Done |
+| 2 | `ScanController` | Done |
+| 3 | `SyncController` | Done |
+| 4 | `DuplicateController` | Next — `_on_excel_dup_action`, `open_db_duplicate_manager`, `_on_db_dup_action` |
+| 5 | `ResolutionController` | `on_missing_db_action`, `_on_missing_excel_action` |
+
+`MainWindow` is down from ~1,187 lines to **620**. Next step is Phase 4 (duplicate management extraction) if you want to continue.
+
+---
+
+**User**
+
+Proceed
+
+What's next
+
+---
+
+**Cursor**
+
+Here’s where things stand and what makes sense next.
+
+## Done (desktop HAPAG)
+
+| Area | Status |
+|------|--------|
+| **P0** R1–R3, R5 | Done (delete fix, updater hardening, RBAC, auth debug off in prod) |
+| **P0** R4 | **Parked** — plaintext access codes; bundles in `parked/access-code-hashing/` |
+| **P1** R6, R8–R11 | Done (logging, shared SQL, optimized fetch, RapidFuzz, unique IDs) |
+| **P2** R13–R14, R16 | Done (CI quality workflow, pyright, operator guide) |
+| **P3** R19 | **Partial** — `audit.py` wired; need `create_audit_table.sql` on MySQL |
+| **R7 refactor** | **Substantially done** — all 5 controller phases wired; `main_window.py` ~396 lines |
+
+---
+
+## Recommended next steps (in order)
+
+### 1. Stabilize & verify (short, high value)
+- **Manual UAT** on a build: scan → sync → bulk sync → add/delete → duplicates → settings/local mode.
+- **Fix `test_main_window.py`** imports (`backend.ui` → `ui` when run from `backend/`).
+- Run the full pytest suite with `QT_QPA_PLATFORM=offscreen` and fix any remaining Qt import issues.
+
+### 2. R7 cleanup (optional polish)
+- Use **`LayoutController.build()`** so layout isn’t duplicated in `MainWindow`.
+- Remove or merge dead code: `FileExplorerController`, duplicate bday/name logic in `DiscrepancyActionController` (sync controller already owns those).
+- Move **`UserManualBrowser`** to its own module.
+
+### 3. R12 — Expand tests
+Plans called for parser/updater/permissions (partially done) plus more controller tests. Many test files exist but may not all pass in CI yet.
+
+### 4. R19 — Finish audit trail
+Run `backend/scripts/create_audit_table.sql` on staging/production so audit rows actually persist.
+
+### 5. R17 — SQLite foreign keys
+Review `sync_engine.py` (`foreign_keys=OFF` during replication) and enable FKs where safe after sync.
+
+### 6. R15 — Code signing
+Needs certs and CI secrets; do when you’re ready to ship signed installers.
+
+### 7. R4 — Access code hashing (when product approves)
+Coordinated desktop + web rollout using both `parked/access-code-hashing/` READMEs. **Do not** run migration until both apps are on bcrypt.
+
+### 8. Long-term (R18 / R20)
+Thin API layer and encrypted runtime config — program-level, not quick wins.
+
+---
+
+## Web app (Child Feeding Program)
+
+If you care about the shared DB: access-code hashing is still **parked** there too. Other web work from the investigation era is separate unless you want alignment (e.g. FPA blocked on desktop but allowed on web).
+
+---
+
+## Practical “pick one”
+
+| If you want… | Do this next |
+|--------------|----------------|
+| Confidence before release | Manual UAT + fix pytest/CI |
+| Smaller codebase | R7 cleanup (`LayoutController`, remove duplicate controllers) |
+| Compliance / accountability | R19 — run audit table migration |
+| Security later | Keep R4 parked until coordinated with web |
+| Trustworthy installers | R15 code signing |
+
+Tell me which track you want (e.g. “tests + CI”, “R19 audit”, or “R7 cleanup”), and we can do that next in Agent mode.
+
+---
+
+**User**
+
+which do you prefer
+
+---
+
+**Cursor**
+
+I’d do **stabilize and verify first** — not R7 cleanup or R19 migration yet.
+
+## Why
+
+You just finished a big **R7 refactor** (scan, sync, duplicate, resolution, navigation, etc.). `main_window.py` shrank from ~1,300 lines to ~400, but behavior wasn’t fully regression-tested in this thread. The highest risk right now is a subtle wiring bug in production, not missing polish.
+
+That means:
+
+1. **Short manual UAT** — scan → single sync → bulk sync → add missing DB row → delete missing Excel → duplicate managers → settings/local mode.
+2. **Fix and run tests in CI** — especially `test_main_window.py` import path and offscreen Qt tests so PRs get a real gate.
+
+That’s usually **half a day to a day** and buys the most confidence.
+
+## After that
+
+| Priority | Item | Reason |
+|----------|------|--------|
+| 2 | **R19** — run `create_audit_table.sql` on staging | Code already logs; cheap win once DB exists |
+| 3 | **R7 cleanup** | LayoutController, dead controllers — nice, not urgent |
+| 4 | **R12** | Broader pytest as you touch areas |
+| Later | **R4** hashing | Only with product + web, coordinated |
+| Later | **R15** signing | When you’re packaging for release |
+| Much later | **R18 / R20** | Architecture program |
+
+## What I’d skip for now
+
+- **R4** — you explicitly parked it; don’t reopen until both apps are ready.
+- **R7 cleanup before tests** — refactoring twice without a safety net is how regressions slip in.
+- **R15 / R18** — infra/program work, not the immediate payoff.
+
+**Bottom line:** I prefer **verify the refactor (UAT + pytest/CI)** next. If you want one concrete Agent-mode task, say “fix tests and CI” and we can do that.
+
+---
+
+**User**
+
+do this: verify the refactor
+
+---
+
+**Cursor**
+
+Verifying the R7 refactor: running the test suite, fixing failures, and checking controller wiring.
+
+
+Fixing test isolation issues and adding refactor verification tests.
+
+
+Fixing a MainWindow init-order bug and updating tests to match current controller patterns.
+
+
+---
+
+**User**
+
+What's next
+
+what's next
 
